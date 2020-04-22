@@ -80,7 +80,7 @@ export default async function main() {
         });
       }
       if ($forTip.checked) {
-        $encourageForm.target = '_blank';
+        $encourageForm.target = 'wallet';
         const now = Date.now();
         const offer = {
           // JSONable ID for this offer.  This is scoped to the origin.
