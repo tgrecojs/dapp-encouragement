@@ -57,19 +57,9 @@ export const makeContract = harden(zcf => {
       const newAdminAllocation = {
         Tip: tipAmountMath.add(adminTipAllocation, userTipAllocation),
       };
-      // and the assurance to the user
       const newUserAllocation = {
         Tip: tipAmountMath.getEmpty(),
       };
-
-      // Give the assurance to the user, if they requested it.
-      if (zcf.getCurrentAllocation(offerHandle).Assurance) {
-        newUserAllocation.Assurance = mint.mintPayment(
-          assuranceAmountMath.make(
-            harden([{ encouragement, serial: count + 1 }]),
-          ),
-        );
-      }
 
       zcf.reallocate(
         harden([adminOfferHandle, offerHandle]),
