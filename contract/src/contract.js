@@ -1,5 +1,6 @@
 // @ts-check
 import harden from '@agoric/harden';
+import produceIssuer from '@agoric/ertp';
 import { produceNotifier } from '@agoric/notifier';
 import { makeZoeHelpers } from '@agoric/zoe/src/contractSupport/zoeHelpers';
 
@@ -19,6 +20,11 @@ export const makeContract = harden(zcf => {
   const tipAmountMath = zcf.getAmountMaths(harden(['Tip'])).Tip;
 
   const { rejectOffer } = makeZoeHelpers(zcf);
+
+  const { issuer, amountMath: assuranceAmountMath, mint } = produceIssuer(
+    'Assurance',
+    'set',
+  );
 
   const updateNotification = () => {
     updater.updateState({ messages, count });
@@ -51,9 +57,19 @@ export const makeContract = harden(zcf => {
       const newAdminAllocation = {
         Tip: tipAmountMath.add(adminTipAllocation, userTipAllocation),
       };
+      // and the assurance to the user
       const newUserAllocation = {
         Tip: tipAmountMath.getEmpty(),
       };
+
+      // Give the assurance to the user, if they requested it.
+      if (zcf.getCurrentAllocation(offerHandle).Assurance) {
+        newUserAllocation.Assurance = mint.mintPayment(
+          assuranceAmountMath.make(
+            harden([{ encouragement, serial: count + 1 }]),
+          ),
+        );
+      }
 
       zcf.reallocate(
         harden([adminOfferHandle, offerHandle]),
@@ -73,12 +89,17 @@ export const makeContract = harden(zcf => {
   return harden({
     invite: zcf.makeInvitation(adminHook, 'admin'),
     publicAPI: {
-      getNotifier: () => notifier,
+      getNotifier() {
+        return notifier;
+      },
       makeInvite,
-      getFreeEncouragement: () => {
+      getFreeEncouragement() {
         count += 1;
         updateNotification();
         return messages.basic;
+      },
+      getAssuranceIssuer() {
+        return issuer;
       },
     },
   });

@@ -14,11 +14,11 @@ import { E } from '@agoric/eventual-send';
 
 /**
  *
- * @param {*} referencesPromise
+ * @param {*} homePromise
  * @param {DeployPowers} powers
  */
 export default async function deployContract(
-  referencesPromise,
+  homePromise,
   { bundleSource, pathResolve },
 ) {
   // Your off-chain machine (what we call an ag-solo) starts off with
@@ -26,7 +26,7 @@ export default async function deployContract(
   // some of which are objects that only exist on your machine.
 
   // Let's wait for the promise to resolve.
-  const references = await referencesPromise;
+  const home = await homePromise;
 
   // Unpack the references.
   const {
@@ -42,7 +42,7 @@ export default async function deployContract(
     // assigned a unique string key. Given the key, other people can
     // access the object through the registry.
     registry,
-  } = references;
+  } = home;
 
   // First, we must bundle up our contract code (./src/contract.js)
   // and install it on Zoe. This returns an installationHandle, an
@@ -83,8 +83,8 @@ export default async function deployContract(
   );
   console.log('writing', defaultsFile);
   const defaultsContents = `\
-  // GENERATED FROM ${pathResolve('./deploy.js')}
-  export default ${JSON.stringify(dappConstants, undefined, 2)};
-  `;
+// GENERATED FROM ${pathResolve('./deploy.js')}
+export default ${JSON.stringify(dappConstants, undefined, 2)};
+`;
   await fs.promises.writeFile(defaultsFile, defaultsContents);
 }
