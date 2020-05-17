@@ -57,7 +57,7 @@ const cmp = (a, b) => (a < b ? -1 : a === b ? 0 : 1);
  * @param {string[]} names
  * @param {Object.<string, HTMLSelectElement>} selects
  */
-const updateOptions = (key, existing, currents, names, selects) => {
+const updateOptions = (key, existing, currents, names, selects, showBalances = true) => {
   for (const name of names) {
     const children = selects[name].children;
     for (let i = 0; i < children.length; i ++) {
@@ -82,7 +82,11 @@ const updateOptions = (key, existing, currents, names, selects) => {
       let newText;
       switch (key) {
         case 'pursePetname':
-          newText = `${current[key]} (${current.extent} ${current.issuerPetname})`
+          if (showBalances) {
+            newText = `${current[key]} (${current.extent} ${current.issuerPetname})`
+          } else {
+            newText = `${current[key]}`;
+          }
           break;
         default: 
           newText = `${current[key]}`;
@@ -148,6 +152,7 @@ export function walletUpdatePurses(purses, selects) {
     newPurses,
     ['$intoPurse'],
     selects,
+    false,
   );
 }
 

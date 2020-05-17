@@ -66,8 +66,9 @@ export const makeContract = harden(zcf => {
       // Check if the user made a request for Assurance.
       const { proposal } = zcf.getOffer(offerHandle);
       if (proposal.want && proposal.want.Assurance) {
+        // Just create a non-fungible serial number.
         const assuranceAmount = harden(
-          assuranceAmountMath.make(harden([{ serial: count + 1 }])),
+          assuranceAmountMath.make(harden([count + 1])),
         );
         p = escrowAndAllocateTo({
           amount: assuranceAmount,
