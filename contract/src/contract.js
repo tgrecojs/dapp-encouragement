@@ -19,12 +19,13 @@ export const makeContract = harden(zcf => {
   let adminOfferHandle;
   const tipAmountMath = zcf.getAmountMaths(harden(['Tip'])).Tip;
 
-  const { rejectOffer } = makeZoeHelpers(zcf);
+  const { escrowAndAllocateTo, rejectOffer } = makeZoeHelpers(zcf);
 
   const { issuer, amountMath: assuranceAmountMath, mint } = produceIssuer(
     'Assurance',
     'set',
   );
+  zcf.addNewIssuer(issuer, 'Assurance');
 
   const updateNotification = () => {
     updater.updateState({ messages, count });
@@ -45,6 +46,7 @@ export const makeContract = harden(zcf => {
     }
 
     const userTipAllocation = zcf.getCurrentAllocation(offerHandle).Tip;
+    let p = Promise.resolve();
     let encouragement = messages.basic;
     // if the user gives a tip, we provide a premium encouragement message
     if (
@@ -61,16 +63,32 @@ export const makeContract = harden(zcf => {
         Tip: tipAmountMath.getEmpty(),
       };
 
+      // Check if the user made a request for Assurance.
+      const { proposal } = zcf.getOffer(offerHandle);
+      if (proposal.want && proposal.want.Assurance) {
+        const assuranceAmount = harden(
+          assuranceAmountMath.make(harden([{ serial: count + 1 }])),
+        );
+        p = escrowAndAllocateTo({
+          amount: assuranceAmount,
+          payment: mint.mintPayment(assuranceAmount),
+          keyword: 'Assurance',
+          recipientHandle: offerHandle,
+        });
+      }
+
       zcf.reallocate(
         harden([adminOfferHandle, offerHandle]),
         harden([newAdminAllocation, newUserAllocation]),
         harden(['Tip']),
       );
     }
-    zcf.complete(harden([offerHandle]));
-    count += 1;
-    updateNotification();
-    return encouragement;
+    return p.then(_ => {
+      zcf.complete(harden([offerHandle]));
+      count += 1;
+      updateNotification();
+      return encouragement;
+    });
   };
 
   const makeInvite = () =>

@@ -3,7 +3,7 @@
 import dappConstants from '../lib/constants.js';
 
 // TODO: Allow multiple brands for tipping.
-const { Tip: tipBrandRegKey } = dappConstants.brandRegKeys;
+const { Tip: tipBrandRegKey, Assurance: assuranceBrandRegKey } = dappConstants.brandRegKeys;
 const allowedBrandRegKeys = [tipBrandRegKey];
 
 /**
@@ -23,6 +23,16 @@ const tipPurses = [];
  * @type {Purse[]}
  */
 const tipIssuers = [];
+
+/**
+ * @type {Purse[]}
+ */
+let intoPurses = [];
+
+/**
+ * @type {Purse[]}
+ */
+const existingIntoPurses = [];
 
 /**
  * @type {Purse[]}
@@ -117,6 +127,13 @@ export function walletUpdatePurses(purses, selects) {
     ({ brandRegKey }) => !allowedBrandRegKeys || allowedBrandRegKeys.includes(brandRegKey)
   ).sort(({ pursePetname: a }, { pursePetname: b }) => cmp(a, b));
 
+  intoPurses = purses.filter(
+    ({ brandRegKey }) => brandRegKey === assuranceBrandRegKey,
+  ).sort(({ pursePetname: a }, { pursePetname: b }) => cmp(a, b));
+
+  const newPurses = intoPurses.sort(({ pursePetname: a }, { pursePetname: b}) =>
+    cmp(a, b));
+
   const newIssuers = allPurses.sort(({ issuerPetname: a }, { issuerPetname: b }) =>
     cmp(a, b));
 
@@ -124,6 +141,14 @@ export function walletUpdatePurses(purses, selects) {
   updateOptions('issuerPetname', tipIssuers, newIssuers, ['$brands'], selects);
 
   flipSelectedBrands(selects);
+
+  updateOptions(
+    'pursePetname',
+    existingIntoPurses,
+    newPurses,
+    ['$intoPurse'],
+    selects,
+  );
 }
 
 /**

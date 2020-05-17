@@ -34,12 +34,16 @@
         <label for="forFree"><input type="radio" id="forFree" value="free" checked="checked" name="tipKind" />
           for free</label><br />
         <label for="forTip"><input type="radio" id="forTip" value="tip" name="tipKind" />
-          for a tip of</label>
+          for a tip of
         <input type="number" min="0" size="6" length="4" id="inputAmount" value="1" disabled="disabled" />
         <select id="brands" disabled="disabled">
           <option value="remove()"><i>no issuers</i></option>
         </select> from <select id="tipPurse" disabled="disabled">
-          <option value="remove()">no purse</option>
+          <option value="remove()"><i>no purse</i></option>
+        </select>
+          into
+        <select id="intoPurse" disabled="disabled">
+          <option value="remove()"><i>no purse</i></option>
         </select></label>
       </p>
 
