@@ -11,6 +11,7 @@ const { INSTANCE_REG_KEY } = dappConstants;
 const selects = {
   $brands: /** @type {HTMLSelectElement} */ (document.getElementById('brands')),
   $tipPurse: /** @type {HTMLSelectElement} */ (document.getElementById('tipPurse')),
+  $intoPurse: /** @type {HTMLSelectElement} */ (document.getElementById('intoPurse')),
 };
 
 const $forFree = /** @type {HTMLInputElement} */ (document.getElementById('forFree'));
@@ -80,7 +81,21 @@ export default async function main() {
         });
       }
       if ($forTip.checked) {
-        $encourageForm.target = '_blank';
+        $encourageForm.target = 'wallet';
+
+        let optWant = {};
+        const intoPurse = selects.$intoPurse.value;
+        if (intoPurse && intoPurse !== 'remove()') {
+          optWant = {
+            want: {
+              Assurance: {
+                pursePetname: intoPurse,
+                extent: [],
+              },
+            },
+          };
+        }
+
         const now = Date.now();
         const offer = {
           // JSONable ID for this offer.  This is scoped to the origin.
@@ -107,6 +122,7 @@ export default async function main() {
                 extent: Number($inputAmount.value),
               },
             },
+            ...optWant,
             exit: { onDemand: null },
           },
         };

@@ -21,14 +21,14 @@ const TIP_ISSUER_PETNAME = process.env.TIP_ISSUER_PETNAME || 'moola';
  */
 
 /**
- * @param {any} referencesPromise A promise for the references
+ * @param {any} homePromise A promise for the references
  * available from REPL home
  * @param {DeployPowers} powers
  */
-export default async function deployApi(referencesPromise, { bundleSource, pathResolve }) {
+export default async function deployApi(homePromise, { bundleSource, pathResolve }) {
 
   // Let's wait for the promise to resolve.
-  const references = await referencesPromise;
+  const home = await homePromise;
 
   // Unpack the references.
   const { 
@@ -65,7 +65,7 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
     http,
 
 
-  }  = references;
+  } = home;
 
 
   // To get the backend of our dapp up and running, first we need to
@@ -156,9 +156,14 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   // contract will use this instanceHandle to get invites to the
   // contract in order to make an offer.
   const INSTANCE_REG_KEY = await E(registry).register(`${CONTRACT_NAME}instance`, instanceHandle);
+  const assuranceIssuer = await E(publicAPI).getAssuranceIssuer();
+  const ASSURANCE_ISSUER_REGKEY = await E(registry).register(`${CONTRACT_NAME}assurance`, assuranceIssuer);
+  const ASSURANCE_BRAND_REGKEY = await E(registry).register(`assurance`, await E(assuranceIssuer).getBrand());
 
   console.log(`-- Contract Name: ${CONTRACT_NAME}`);
   console.log(`-- InstanceHandle Register Key: ${INSTANCE_REG_KEY}`);
+  console.log(`-- ASSURANCE_ISSUER_REGKEY: ${ASSURANCE_ISSUER_REGKEY}`);
+  console.log(`-- ASSURANCE_BRAND_REGKEY: ${ASSURANCE_BRAND_REGKEY}`);
   console.log(`-- TIP_BRAND_REGKEY: ${TIP_BRAND_REGKEY}`)
 
   // We want the handler to run persistently. (Scripts such as this
@@ -182,15 +187,16 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   const dappConstants = {
     INSTANCE_REG_KEY,
     // BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
-    brandRegKeys: { Tip: TIP_BRAND_REGKEY },
+    brandRegKeys: { Tip: TIP_BRAND_REGKEY, Assurance: ASSURANCE_BRAND_REGKEY },
+    issuerRegKeys: { Assurance: ASSURANCE_ISSUER_REGKEY },
     BRIDGE_URL: 'http://127.0.0.1:8000',
     API_URL: 'http://127.0.0.1:8000',
   };
   const defaultsFile = pathResolve(`../ui/public/conf/defaults.js`);
   console.log('writing', defaultsFile);
   const defaultsContents = `\
-  // GENERATED FROM ${pathResolve('./deploy.js')}
-  export default ${JSON.stringify(dappConstants, undefined, 2)};
-  `;
+// GENERATED FROM ${pathResolve('./deploy.js')}
+export default ${JSON.stringify(dappConstants, undefined, 2)};
+`;
   await fs.promises.writeFile(defaultsFile, defaultsContents);
 }
