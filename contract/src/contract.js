@@ -25,7 +25,10 @@ export const makeContract = harden(zcf => {
     'Assurance',
     'set',
   );
-  zcf.addNewIssuer(issuer, 'Assurance');
+
+  // Keep this promise for later, but track any error we get from it.
+  const addAssuranceP = zcf.addNewIssuer(issuer, 'Assurance');
+  addAssuranceP.catch(e => console.error('Cannot add Assurance issuer', e));
 
   const updateNotification = () => {
     updater.updateState({ messages, count });
@@ -70,12 +73,14 @@ export const makeContract = harden(zcf => {
         const assuranceAmount = harden(
           assuranceAmountMath.make(harden([count + 1])),
         );
-        p = escrowAndAllocateTo({
-          amount: assuranceAmount,
-          payment: mint.mintPayment(assuranceAmount),
-          keyword: 'Assurance',
-          recipientHandle: offerHandle,
-        });
+        p = addAssuranceP.then(_ =>
+          escrowAndAllocateTo({
+            amount: assuranceAmount,
+            payment: mint.mintPayment(assuranceAmount),
+            keyword: 'Assurance',
+            recipientHandle: offerHandle,
+          }),
+        );
       }
 
       zcf.reallocate(
