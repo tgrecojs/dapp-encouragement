@@ -67,7 +67,6 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
 
   } = home;
 
-
   // To get the backend of our dapp up and running, first we need to
   // grab the installationHandle that our contract deploy script put
   // in the public registry.
@@ -115,20 +114,22 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   const TIP_BRAND_REGKEY = await E.G(E(wallet).getIssuerNames(tipIssuer)).brandRegKey;
 
   const issuerKeywordRecord = harden({ Tip: tipIssuer });
-  const adminInvite = await E(zoe).makeInstance(encouragementContractInstallationHandle, issuerKeywordRecord);
+  const {
+    invite: adminInvite,
+    instanceRecord: { publicAPI },
+  } = await E(zoe)
+    .makeInstance(encouragementContractInstallationHandle, issuerKeywordRecord);
   console.log('- SUCCESS! contract instance is running on Zoe');
-  
+
   // Let's get the Zoe invite issuer to be able to inspect our invite further
   const inviteIssuer = await E(zoe).getInviteIssuer();
 
   // Use the helper function to get an instanceHandle from the invite.
   // An instanceHandle is like an installationHandle in that it is a
   // similar opaque identifier. In this case, though, it identifies a
-  // running contract instance, not code. 
+  // running contract instance, not code.
   const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
   const instanceHandle = await getInstanceHandle(adminInvite);
-
-  const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
 
   // Let's use the adminInvite to make an offer. Note that we aren't
   // specifying any proposal, and we aren't escrowing any assets with
