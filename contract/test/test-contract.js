@@ -84,7 +84,7 @@ test('contract with valid offers', async t => {
     // Let's test some of the publicAPI methods. The publicAPI is
     // accessible to anyone who has access to Zoe and the
     // instanceHandle. The publicAPI methods are up to the contract,
-    // and Zoe doesn't require contracts to have any particular
+    // and Zoe doesn't require contracts to have
     // publicAPI methods. In this case, the contract provides a
     // getNotifier() function that returns a notifier we can subscribe
     // to, in order to get updates about changes to the state of the
