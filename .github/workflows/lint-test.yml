@@ -29,7 +29,8 @@ jobs:
         script: |
           const { body = '' } = context.payload.pull_request || {};
           const regex = /.*\#agoric-sdk-branch:\s+(\S+)/;
-          const agoricSdkBranch = regex.exec(body)[1] || 'master';
+          const match = regex.exec(body);
+          const agoricSdkBranch = match && match[1] || 'master';
           console.log(agoricSdkBranch);
           return agoricSdkBranch;
 
