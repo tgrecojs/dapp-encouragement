@@ -164,7 +164,7 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   console.log(`-- InstanceHandle Register Key: ${INSTANCE_REG_KEY}`);
   console.log(`-- ASSURANCE_ISSUER_REGKEY: ${ASSURANCE_ISSUER_REGKEY}`);
   console.log(`-- ASSURANCE_BRAND_REGKEY: ${ASSURANCE_BRAND_REGKEY}`);
-  console.log(`-- TIP_BRAND_REGKEY: ${TIP_BRAND_REGKEY}`)
+  console.log(`-- TIP_BRAND_REGKEY: ${TIP_BRAND_REGKEY}`);
 
   // We want the handler to run persistently. (Scripts such as this
   // deploy.js script are ephemeral and all connections to objects
@@ -173,10 +173,10 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   // the code on this machine even when the script is done running.
 
   // Bundle up the handler code
-  const { source, moduleFormat } = await bundleSource(pathResolve('./src/handler.js'));
+  const bundle = await bundleSource(pathResolve('./src/handler.js'));
   
   // Install it on the spawner
-  const handlerInstall = E(spawner).install(source, moduleFormat);
+  const handlerInstall = E(spawner).install(bundle);
 
   // Spawn the running code
   const handler = E(handlerInstall).spawn({ publicAPI, http });
