@@ -18,7 +18,7 @@ test('contract with valid offers', async t => {
   try {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const zoe = makeZoe({ require });
+    const zoe = makeZoe();
 
     // Get the Zoe invite issuer from Zoe.
     const inviteIssuer = await E(zoe).getInviteIssuer();
@@ -27,18 +27,19 @@ test('contract with valid offers', async t => {
     const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Pack the contract.
-    const { source, moduleFormat } = await bundleSource(contractPath);
+    const contractBundle = await bundleSource(contractPath);
 
     // Install the contract on Zoe, getting an installationHandle (an
     // opaque identifier). We can use this installationHandle to look
     // up the code we installed. Outside of tests, we can also send the
     // installationHandle to someone else, and they can use it to
     // create a new contract instance using the same code.
-    const installationHandle = await E(zoe).install(source, moduleFormat);
+    const installationHandle = await E(zoe).install(contractBundle);
 
     // Let's check the code. Outside of this test, we would probably
     // want to check more extensively,
-    const code = await E(zoe).getInstallation(installationHandle);
+    const installedBundle = await E(zoe).getInstallation(installationHandle);
+    const code = installedBundle.source;
     t.ok(
       code.includes(`This contract does a few interesting things.`),
       `the code installed passes a quick check of what we intended to install`,
