@@ -5,7 +5,6 @@ import fs from 'fs';
 import installationConstants from '../ui/public/conf/installationConstants.js';
 import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
-import { makeGetInstanceHandle } from '@agoric/zoe/src/clientSupport';
 
 // deploy.js runs in an ephemeral Node.js outside of swingset. The
 // spawner runs within ag-solo, so is persistent.  Once the deploy.js
@@ -67,7 +66,6 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
 
   } = home;
 
-
   // To get the backend of our dapp up and running, first we need to
   // grab the installationHandle that our contract deploy script put
   // in the public registry.
@@ -115,30 +113,29 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   const TIP_BRAND_REGKEY = await E.G(E(wallet).getIssuerNames(tipIssuer)).brandRegKey;
 
   const issuerKeywordRecord = harden({ Tip: tipIssuer });
-  const adminInvite = await E(zoe).makeInstance(encouragementContractInstallationHandle, issuerKeywordRecord);
+  const {
+    invite: adminInvite,
+    instanceRecord: { publicAPI, handle: instanceHandle },
+  } = await E(zoe)
+    .makeInstance(encouragementContractInstallationHandle, issuerKeywordRecord);
   console.log('- SUCCESS! contract instance is running on Zoe');
-  
-  // Let's get the Zoe invite issuer to be able to inspect our invite further
-  const inviteIssuer = await E(zoe).getInviteIssuer();
 
-  // Use the helper function to get an instanceHandle from the invite.
-  // An instanceHandle is like an installationHandle in that it is a
-  // similar opaque identifier. In this case, though, it identifies a
-  // running contract instance, not code. 
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
-  const instanceHandle = await getInstanceHandle(adminInvite);
-
-  const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
+  // An instanceHandle is an opaque identifier like an installationHandle.
+  // instanceHandle identifies an instance of a running contract.
+  if (!instanceHandle) {
+    console.log('- FAILURE! contract instance NOT retrieved.');
+    throw new Error('Unable to create contract instance');
+  }
 
   // Let's use the adminInvite to make an offer. Note that we aren't
   // specifying any proposal, and we aren't escrowing any assets with
   // Zoe in this offer. We are doing this so that Zoe will eventually
   // give us a payout of all of the tips. We can trigger this payout
-  // by calling the `cancel` function on the `cancelObj`.
+  // by calling the `complete` function on the `completeObj`.
   const {
     payout: adminPayoutP,
     outcome: adminOutcomeP, 
-    cancelObj,
+    completeObj,
   } = await E(zoe).offer(adminInvite);
 
   const outcome = await adminOutcomeP;
@@ -146,10 +143,10 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
 
   // When the promise for a payout resolves, we want to deposit the
   // payments in our purses. We will put the adminPayoutP and
-  // cancelObj in our scratch location so that we can share the
+  // completeObj in our scratch location so that we can share the
   // live objects with the shutdown.js script. 
   E(scratch).set('adminPayoutP', adminPayoutP);
-  E(scratch).set('cancelObj', cancelObj);
+  E(scratch).set('completeObj', completeObj);
 
   // Now that we've done all the admin work, let's share this
   // instanceHandle by adding it to the registry. Any users of our

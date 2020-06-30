@@ -17,7 +17,7 @@ export default async function deployShutdown(referencesPromise, { bundleSource, 
   
   const { uploads: scratch, wallet } = await referencesPromise;
   const adminPayoutP = E(scratch).get('adminPayoutP');
-  const cancelObj = E(scratch).get('cancelObj');
+  const completeObj = E(scratch).get('completeObj');
 
   const moolaPurse = await E(wallet).getPurse('Fun budget');
   adminPayoutP.then(async payout => {
@@ -32,7 +32,7 @@ export default async function deployShutdown(referencesPromise, { bundleSource, 
     }
   });
 
-  await E(cancelObj).cancel();
+  await E(completeObj).complete();
 
   console.log('Contract is shut down.');
 }

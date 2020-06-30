@@ -7,9 +7,10 @@ import { makeZoeHelpers } from '@agoric/zoe/src/contractSupport/zoeHelpers';
 /**
  * This contract does a few interesting things.
  *
- * @type {import('@agoric/zoe').MakeContract}
+ * @typedef {import('../zoe').ContractFacet} ContractFacet
+ * @param {ContractFacet} zcf
  */
-export const makeContract = harden(zcf => {
+const makeContract = zcf => {
   let count = 0;
   const messages = {
     basic: `You're doing great!`,
@@ -17,7 +18,6 @@ export const makeContract = harden(zcf => {
   };
   const { notifier, updater } = produceNotifier();
   let adminOfferHandle;
-  const tipAmountMath = zcf.getAmountMaths(harden(['Tip'])).Tip;
 
   const { escrowAndAllocateTo, rejectOffer } = makeZoeHelpers(zcf);
 
@@ -49,6 +49,8 @@ export const makeContract = harden(zcf => {
     }
 
     const userTipAllocation = zcf.getCurrentAllocation(offerHandle).Tip;
+    const { brandKeywordRecord } = zcf.getInstanceRecord();
+    const tipAmountMath = zcf.getAmountMath(brandKeywordRecord.Tip);
     let p = Promise.resolve();
     let encouragement = messages.basic;
     // if the user gives a tip, we provide a premium encouragement message
@@ -58,7 +60,10 @@ export const makeContract = harden(zcf => {
     ) {
       encouragement = messages.premium;
       // reallocate the tip to the adminOffer
-      const adminTipAllocation = zcf.getCurrentAllocation(adminOfferHandle).Tip;
+      const adminTipAllocation = zcf.getCurrentAllocation(
+        adminOfferHandle,
+        brandKeywordRecord,
+      ).Tip;
       const newAdminAllocation = {
         Tip: tipAmountMath.add(adminTipAllocation, userTipAllocation),
       };
@@ -86,7 +91,6 @@ export const makeContract = harden(zcf => {
       zcf.reallocate(
         harden([adminOfferHandle, offerHandle]),
         harden([newAdminAllocation, newUserAllocation]),
-        harden(['Tip']),
       );
     }
     return p.then(_ => {
@@ -100,9 +104,8 @@ export const makeContract = harden(zcf => {
   const makeInvite = () =>
     zcf.makeInvitation(encouragementHook, 'encouragement');
 
-  return harden({
-    invite: zcf.makeInvitation(adminHook, 'admin'),
-    publicAPI: {
+  zcf.initPublicAPI(
+    harden({
       getNotifier() {
         return notifier;
       },
@@ -115,6 +118,11 @@ export const makeContract = harden(zcf => {
       getAssuranceIssuer() {
         return issuer;
       },
-    },
-  });
-});
+    }),
+  );
+
+  return zcf.makeInvitation(adminHook, 'admin');
+};
+
+harden(makeContract);
+export { makeContract };

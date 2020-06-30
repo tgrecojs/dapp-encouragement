@@ -9,7 +9,6 @@ import harden from '@agoric/harden';
 
 import { makeZoe } from '@agoric/zoe';
 import produceIssuer from '@agoric/ertp';
-import { makeGetInstanceHandle } from '@agoric/zoe/src/clientSupport';
 
 const contractPath = `${__dirname}/../src/contract`;
 
@@ -22,9 +21,6 @@ test('contract with valid offers', async t => {
 
     // Get the Zoe invite issuer from Zoe.
     const inviteIssuer = await E(zoe).getInviteIssuer();
-
-    // Make our helper functions.
-    const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);
@@ -56,8 +52,13 @@ test('contract with valid offers', async t => {
     const bucks5 = bucksAmountMath.make(5);
     const bucksPayment = bucksMint.mintPayment(bucks5);
 
-    // Create the contract instance, using our new issuer.
-    const adminInvite = await E(zoe).makeInstance(installationHandle, {
+    // Create the contract instance, using our new issuer. It returns
+    // an invite, which we will use when we call offer(), and the
+    // instanceRecord, which contains the publicAPI, among other things.
+    const {
+      invite: adminInvite,
+      instanceRecord: { publicAPI },
+    } = await E(zoe).makeInstance(installationHandle, {
       Tip: bucksIssuer,
     });
 
@@ -68,15 +69,12 @@ test('contract with valid offers', async t => {
       `an valid invite (an ERTP payment) was created`,
     );
 
-    // Use the helper function to get an instanceHandle from the invite.
-    const instanceHandle = await getInstanceHandle(adminInvite);
-
     // Let's use the adminInvite to make an offer. This will allow us
     // to remove our tips at the end
     const {
       payout: adminPayoutP,
       outcome: adminOutcomeP,
-      cancelObj: { cancel: cancelAdmin },
+      completeObj: { complete: completeAdmin },
     } = await E(zoe).offer(adminInvite);
 
     t.equals(
@@ -88,11 +86,11 @@ test('contract with valid offers', async t => {
     // Let's test some of the publicAPI methods. The publicAPI is
     // accessible to anyone who has access to Zoe and the
     // instanceHandle. The publicAPI methods are up to the contract,
-    // and Zoe doesn't require contracts to have any particular
-    // publicAPI methods.
-    const instanceRecord = await E(zoe).getInstance(instanceHandle);
-    const { publicAPI } = instanceRecord;
-
+    // and Zoe doesn't require contracts to have
+    // publicAPI methods. In this case, the contract provides a
+    // getNotifier() function that returns a notifier we can subscribe
+    // to, in order to get updates about changes to the state of the
+    // contract.
     const notifier = publicAPI.getNotifier();
     const { value, updateHandle } = notifier.getUpdateSince();
     const nextUpdateP = notifier.getUpdateSince(updateHandle);
@@ -146,7 +144,7 @@ test('contract with valid offers', async t => {
       t.deepEquals(newResult.value.count, 2, `count is now 2`);
 
       // Let's get our Tips
-      cancelAdmin();
+      completeAdmin();
       Promise.resolve(E.G(adminPayoutP).Tip).then(tip => {
         bucksIssuer.getAmountOf(tip).then(tipAmount => {
           t.deepEquals(tipAmount, bucks5, `payout is 5 bucks, all the tips`);
