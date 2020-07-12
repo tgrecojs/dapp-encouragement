@@ -92,7 +92,7 @@ test('contract with valid offers', async t => {
     // to, in order to get updates about changes to the state of the
     // contract.
     const notifier = publicAPI.getNotifier();
-    const { value, updateHandle } = notifier.getUpdateSince();
+    const { value, updateHandle } = await notifier.getUpdateSince();
     const nextUpdateP = notifier.getUpdateSince(updateHandle);
 
     // Count starts at 0
@@ -140,7 +140,7 @@ test('contract with valid offers', async t => {
         `premium message is as expected`,
       );
 
-      const newResult = notifier.getUpdateSince();
+      const newResult = await notifier.getUpdateSince();
       t.deepEquals(newResult.value.count, 2, `count is now 2`);
 
       // Let's get our Tips
