@@ -2,7 +2,7 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-export default harden(({ publicAPI, http }, _inviteMaker) => {
+export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) => {
   let notifier;
 
   // Here's how you could implement a notification-based
@@ -63,7 +63,6 @@ export default harden(({ publicAPI, http }, _inviteMaker) => {
               
               return harden({
                 type: 'encouragement/getEncouragementResponse',
-                instanceRegKey: undefined,
                 data: await E(publicAPI).getFreeEncouragement(),
               });
             }
@@ -73,6 +72,22 @@ export default harden(({ publicAPI, http }, _inviteMaker) => {
               return harden({
                 type: 'encouragement/subscribeNotificationsResponse',
                 data: true,
+              });
+            }
+
+            case 'encouragement/sendInvite': {
+              const { depositFacetId, offer } = obj.data;
+              const depositFacet = E(board).getValue(depositFacetId);
+              const invite = await E(publicAPI).makeInvite();
+              const inviteAmount = await E(inviteIssuer).getAmountOf(invite);
+              const { extent: [{ handle }]} = inviteAmount;
+              const inviteHandleBoardId = await E(board).getId(handle);
+              const updatedOffer = { ...offer, inviteHandleBoardId };
+              E(depositFacet).receive(invite);
+              
+              return harden({
+                type: 'encouragement/sendInviteResponse',
+                data: { offer: updatedOffer },
               });
             }
 

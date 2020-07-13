@@ -37,11 +37,13 @@ export default async function deployContract(
     // everyone has access to the same Zoe.
     zoe,
 
-    // The registry also lives on-chain, and is used to make private
-    // objects public to everyone else on-chain. These objects get
-    // assigned a unique string key. Given the key, other people can
-    // access the object through the registry.
-    registry,
+    // The board is an on-chain object that is used to make private
+    // on-chain objects public to everyone else on-chain. These
+    // objects get assigned a unique string id. Given the id, other
+    // people can access the object through the board. Ids and values
+    // have a one-to-one bidirectional mapping. If a value is added a
+    // second time, the original id is just returned.
+    board,
   } = home;
 
   // First, we must bundle up our contract code (./src/contract.js)
@@ -58,23 +60,20 @@ export default async function deployContract(
   // instance.)
 
   // To share the installationHandle, we're going to put it in the
-  // registry. The registry is a shared, on-chain object that maps
-  // strings to objects. We will need to provide a starting name when
-  // we register our installationHandle, and the registry will add a
-  // suffix creating a guaranteed unique name.
+  // board. The board is a shared, on-chain object that maps
+  // strings to objects.
   const CONTRACT_NAME = 'encouragement';
-  const INSTALLATION_REG_KEY = await E(registry).register(
-    `${CONTRACT_NAME}installation`,
-    installationHandle,
-  );
+  const INSTALLATION_HANDLE_BOARD_ID = await E(board).getId(installationHandle);
   console.log('- SUCCESS! contract code installed on Zoe');
   console.log(`-- Contract Name: ${CONTRACT_NAME}`);
-  console.log(`-- InstallationHandle Register Key: ${INSTALLATION_REG_KEY}`);
+  console.log(
+    `-- InstallationHandle Board Id: ${INSTALLATION_HANDLE_BOARD_ID}`,
+  );
 
   // Save the constants somewhere where the UI and api can find it.
   const dappConstants = {
     CONTRACT_NAME,
-    INSTALLATION_REG_KEY,
+    INSTALLATION_HANDLE_BOARD_ID,
   };
   const defaultsFile = pathResolve(
     `../ui/public/conf/installationConstants.js`,

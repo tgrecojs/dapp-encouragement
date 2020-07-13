@@ -3,7 +3,11 @@ import dappConstants from '../lib/constants.js';
 import { connect } from './connect.js';
 import { walletUpdatePurses, flipSelectedBrands } from './wallet.js';
 
-const { INSTANCE_REG_KEY } = dappConstants;
+const { 
+  INVITE_BRAND_BOARD_ID, 
+  INSTANCE_HANDLE_BOARD_ID, 
+  INSTALLATION_HANDLE_BOARD_ID,
+} = dappConstants;
 
 /**
  * @type {Object.<string, HTMLSelectElement>}
@@ -22,6 +26,8 @@ export default async function main() {
   selects.$brands.addEventListener('change', () => {
     flipSelectedBrands(selects);
   });
+
+  let zoeInviteDepositFacetId;
   
   /**
    * @param {{ type: string; data: any; walletURL: string }} obj
@@ -30,7 +36,6 @@ export default async function main() {
     switch (obj.type) {
       case 'walletUpdatePurses': {
         const purses = JSON.parse(obj.data);
-        console.log('got purses', purses);
         walletUpdatePurses(purses, selects);
         $inputAmount.removeAttribute('disabled');
         break;
@@ -39,6 +44,9 @@ export default async function main() {
        // Change the form action to URL.
        $encourageForm.action = `${obj.walletURL}`;
        break;
+      }
+      case 'walletDepositFacetIdResponse': {
+        zoeInviteDepositFacetId = obj.data;
       }
     }
   };
@@ -51,12 +59,26 @@ export default async function main() {
    */
   const apiRecv = obj => {
     switch (obj.type) {
-      case 'encouragement/getEncouragementResponse':
+      case 'encouragement/getEncouragementResponse': {
         alert(`Encourager says: ${obj.data}`);
         break;
-      case 'encouragement/encouragedResponse':
+      }
+      case 'encouragement/encouragedResponse': {
         $numEncouragements.innerHTML = obj.data.count;
         break;
+      }
+      case 'encouragement/sendInviteResponse': {
+        // Once the invite has been sent to the user, we update the
+        // offer to include the inviteHandleBoardId. Then we make a
+        // request to the user's wallet to send the proposed offer for
+        // acceptance/rejection.
+        const { offer } = obj.data;
+        walletSend({
+          type: 'walletAddOffer',
+          data: offer,
+        });
+        break;
+      }
     }
   };
 
@@ -64,6 +86,7 @@ export default async function main() {
   
   const walletSend = await connect('wallet', walletRecv).then(walletSend => {
     walletSend({ type: 'walletGetPurses'});
+    walletSend({ type: 'walletGetDepositFacetId', brandBoardId: INVITE_BRAND_BOARD_ID});
     return walletSend;
   });
 
@@ -100,19 +123,11 @@ export default async function main() {
         const offer = {
           // JSONable ID for this offer.  This is scoped to the origin.
           id: now,
-      
-          // Contract-specific metadata.
-          instanceRegKey: INSTANCE_REG_KEY,
-      
-          // Format is:
-          //   hooks[targetName][hookName] = [hookMethod, ...hookArgs].
-          // Then is called within the wallet as:
-          //   E(target)[hookMethod](...hookArgs)
-          hooks: {
-            publicAPI: {
-              getInvite: ['makeInvite'], // E(publicAPI).makeInvite()
-            },
-          },
+
+          // TODO: get this from the invite instead in the wallet. We
+          // don't want to trust the dapp on this.
+          instanceHandleBoardId: INSTANCE_HANDLE_BOARD_ID,
+          installationHandleBoardId: INSTALLATION_HANDLE_BOARD_ID,
       
           proposalTemplate: {
             give: {
@@ -126,9 +141,12 @@ export default async function main() {
             exit: { onDemand: null },
           },
         };
-        walletSend({
-          type: 'walletAddOffer',
-          data: offer
+        apiSend({
+          type: 'encouragement/sendInvite',
+          data: {
+            depositFacetId: zoeInviteDepositFacetId,
+            offer,
+          },
         });
         alert('Please approve your tip, then close the wallet.')
       }

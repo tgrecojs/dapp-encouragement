@@ -15,10 +15,10 @@ import { E } from '@agoric/eventual-send';
 const ASSURANCE_ISSUER_PETNAME = 'encouragement';
 const ASSURANCE_PURSE_PETNAME = 'Emotional bank account';
 
-// The contract's registry key for the assurance issuer.
+// The contract's boardId for the assurance issuer.
 const {
-  issuerRegKeys: { Assurance: ASSURANCE_ISSUER_REGKEY },
-  brandRegKeys: { Assurance: ASSURANCE_BRAND_REGKEY },
+  issuerBoardIds: { Assurance: ASSURANCE_ISSUER_BOARD_ID },
+  brandBoardIds: { Assurance: ASSURANCE_BRAND__BOARD_ID },
 } = dappConstants;
 
 /**
@@ -48,23 +48,24 @@ export default async function deployWallet(homePromise, { bundleSource, pathReso
 
     // *** ON-CHAIN REFERENCES ***
 
-    // The registry lives on-chain, and is used to make private
-    // objects public to everyone else on-chain. These objects get
-    // assigned a unique string key. Given the key, other people can
-    // access the object through the registry.
-    registry,
-
+    // The board is an on-chain object that is used to make private
+    // on-chain objects public to everyone else on-chain. These
+    // objects get assigned a unique string id. Given the id, other
+    // people can access the object through the board. Ids and values
+    // have a one-to-one bidirectional mapping. If a value is added a
+    // second time, the original id is just returned.
+    board,
   } = home;
 
   // Install this Dapp's issuer and empty purse in the wallet.
-  const assuranceIssuer = await E(registry).get(ASSURANCE_ISSUER_REGKEY);
+  const assuranceIssuer = await E(board).getValue(ASSURANCE_ISSUER_BOARD_ID);
   if (!assuranceIssuer) {
-    throw Error(`The ${ASSURANCE_ISSUER_REGKEY} registry key was not found; first:
+    throw Error(`The '${ASSURANCE_ISSUER_BOARD_ID}' assurance issuer board id was not found; first:
 agoric deploy contract/deploy.js api/deploy.js`);
   }
 
   // Associate the issuer with a petname.
-  await E(wallet).addIssuer(ASSURANCE_ISSUER_PETNAME, assuranceIssuer, ASSURANCE_BRAND_REGKEY);
+  await E(wallet).addIssuer(ASSURANCE_ISSUER_PETNAME, assuranceIssuer);
 
   // Create an empty purse for that issuer, and give it a petname.
   await E(wallet).makeEmptyPurse(ASSURANCE_ISSUER_PETNAME, ASSURANCE_PURSE_PETNAME);

@@ -3,15 +3,15 @@
 import dappConstants from '../lib/constants.js';
 
 // TODO: Allow multiple brands for tipping.
-const { Tip: tipBrandRegKey, Assurance: assuranceBrandRegKey } = dappConstants.brandRegKeys;
-const allowedBrandRegKeys = [tipBrandRegKey];
+const { Tip: tipBrandBoardId, Assurance: assuranceBrandBoardId } = dappConstants.brandBoardIds;
+const allowedBrandBoardIds = [tipBrandBoardId];
 
 /**
  * @typedef {Object.<string, HTMLOptionElement>} Purse
- * @property {string} issuerPetname
+ * @property {string} brandPetname
  * @property {string} pursePetname
  * @property {any} extent
- * @property {string} brandRegKey
+ * @property {string} brandBoardId
  */
 
 /**
@@ -83,7 +83,7 @@ const updateOptions = (key, existing, currents, names, selects, showBalances = t
       switch (key) {
         case 'pursePetname':
           if (showBalances) {
-            newText = `${current[key]} (${current.extent} ${current.issuerPetname})`
+            newText = `${current[key]} (${current.extent} ${current.brandPetname})`
           } else {
             newText = `${current[key]}`;
           }
@@ -128,21 +128,21 @@ const updateOptions = (key, existing, currents, names, selects, showBalances = t
  */
 export function walletUpdatePurses(purses, selects) {
   allPurses = purses.filter(
-    ({ brandRegKey }) => !allowedBrandRegKeys || allowedBrandRegKeys.includes(brandRegKey)
+    ({ brandBoardId }) => !allowedBrandBoardIds|| allowedBrandBoardIds.includes(brandBoardId)
   ).sort(({ pursePetname: a }, { pursePetname: b }) => cmp(a, b));
 
   intoPurses = purses.filter(
-    ({ brandRegKey }) => brandRegKey === assuranceBrandRegKey,
+    ({ brandBoardId }) => brandBoardId === assuranceBrandBoardId,
   ).sort(({ pursePetname: a }, { pursePetname: b }) => cmp(a, b));
 
   const newPurses = intoPurses.sort(({ pursePetname: a }, { pursePetname: b}) =>
     cmp(a, b));
 
-  const newIssuers = allPurses.sort(({ issuerPetname: a }, { issuerPetname: b }) =>
+  const newIssuers = allPurses.sort(({ brandPetname: a }, { brandPetname: b }) =>
     cmp(a, b));
 
   // Enable the purse list.
-  updateOptions('issuerPetname', tipIssuers, newIssuers, ['$brands'], selects);
+  updateOptions('brandPetname', tipIssuers, newIssuers, ['$brands'], selects);
 
   flipSelectedBrands(selects);
 
@@ -163,7 +163,7 @@ export function flipSelectedBrands(selects) {
   let i = 0;
   while (i < tipPurses.length) {
     const purse = tipPurses[i];
-    if (purse.issuerPetname !== selects.$brands.value) {
+    if (purse.brandPetname !== selects.$brands.value) {
       // Remove the purse.
       selects.$tipPurse.removeChild(purse.$tipPurse);
       delete purse.$tipPurse;
@@ -176,7 +176,7 @@ export function flipSelectedBrands(selects) {
   updateOptions(
     'pursePetname',
     tipPurses,
-    allPurses.filter(({ issuerPetname }) => issuerPetname === selects.$brands.value),
+    allPurses.filter(({ brandPetname }) => brandPetname === selects.$brands.value),
     ['$tipPurse'],
     selects,
   );

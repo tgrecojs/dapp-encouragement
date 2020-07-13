@@ -53,27 +53,28 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
     // everyone has access to the same Zoe.
     zoe, 
 
-    // The registry also lives on-chain, and is used to make private
-    // objects public to everyone else on-chain. These objects get
-    // assigned a unique string key. Given the key, other people can
-    // access the object through the registry
-    registry,
-
     // The http request handler.
     // TODO: add more explanation
     http,
 
+    // The board is an on-chain object that is used to make private
+    // on-chain objects public to everyone else on-chain. These
+    // objects get assigned a unique string id. Given the id, other
+    // people can access the object through the board. Ids and values
+    // have a one-to-one bidirectional mapping. If a value is added a
+    // second time, the original id is just returned.
+    board,
 
   } = home;
 
   // To get the backend of our dapp up and running, first we need to
   // grab the installationHandle that our contract deploy script put
-  // in the public registry.
+  // in the public board.
   const { 
-    INSTALLATION_REG_KEY,
+    INSTALLATION_HANDLE_BOARD_ID,
     CONTRACT_NAME,
   } = installationConstants;
-  const encouragementContractInstallationHandle = await E(registry).get(INSTALLATION_REG_KEY);
+  const encouragementContractInstallationHandle = await E(board).getValue(INSTALLATION_HANDLE_BOARD_ID);
   
   // Second, we can use the installationHandle to create a new
   // instance of our contract code on Zoe. A contract instance is a running
@@ -91,9 +92,8 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   // keyword (a string that the contract determines, in this case,
   // 'Tip') plus an issuer for the token kind, the moolaIssuer.
 
-  // In our example, moola is a widely used token. Someone has already
-  // registered the moolaIssuer in the registry. We could also get it
-  // from our wallet.
+  // In our example, moola is a widely used token that our wallet
+  // already knows about.
 
   // getIssuers returns an array, because we currently cannot
   // serialize maps. We can immediately create a map using the array,
@@ -108,9 +108,9 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
     process.exit(1);
   }
 
-  // Find its brand registry key so we can communicate the issuer to other wallets.
-  // Equivalent to: await wallet~.getIssuerNames(tipIssuer)~.brandRegKey
-  const TIP_BRAND_REGKEY = await E.G(E(wallet).getIssuerNames(tipIssuer)).brandRegKey;
+  // Find its brand board id so we can communicate the issuer to other wallets.
+  const tipBrand = await E(tipIssuer).getBrand();
+  const TIP_BRAND_BOARD_ID = await E(board).getId(tipBrand);
 
   const issuerKeywordRecord = harden({ Tip: tipIssuer });
   const {
@@ -119,6 +119,10 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   } = await E(zoe)
     .makeInstance(encouragementContractInstallationHandle, issuerKeywordRecord);
   console.log('- SUCCESS! contract instance is running on Zoe');
+  
+  const inviteIssuer = await E(zoe).getInviteIssuer();
+  const inviteBrand = await E(inviteIssuer).getBrand()
+  const INVITE_BRAND_BOARD_ID = await E(board).getId(inviteBrand);
 
   // An instanceHandle is an opaque identifier like an installationHandle.
   // instanceHandle identifies an instance of a running contract.
@@ -149,19 +153,19 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   E(scratch).set('completeObj', completeObj);
 
   // Now that we've done all the admin work, let's share this
-  // instanceHandle by adding it to the registry. Any users of our
+  // instanceHandle by adding it to the board. Any users of our
   // contract will use this instanceHandle to get invites to the
   // contract in order to make an offer.
-  const INSTANCE_REG_KEY = await E(registry).register(`${CONTRACT_NAME}instance`, instanceHandle);
+  const INSTANCE_HANDLE_BOARD_ID = await E(board).getId(instanceHandle);
   const assuranceIssuer = await E(publicAPI).getAssuranceIssuer();
-  const ASSURANCE_ISSUER_REGKEY = await E(registry).register(`${CONTRACT_NAME}assurance`, assuranceIssuer);
-  const ASSURANCE_BRAND_REGKEY = await E(registry).register(`assurance`, await E(assuranceIssuer).getBrand());
+  const ASSURANCE_ISSUER_BOARD_ID = await E(board).getId(assuranceIssuer);
+  const ASSURANCE_BRAND_BOARD_ID = await E(board).getId(await E(assuranceIssuer).getBrand());
 
   console.log(`-- Contract Name: ${CONTRACT_NAME}`);
-  console.log(`-- InstanceHandle Register Key: ${INSTANCE_REG_KEY}`);
-  console.log(`-- ASSURANCE_ISSUER_REGKEY: ${ASSURANCE_ISSUER_REGKEY}`);
-  console.log(`-- ASSURANCE_BRAND_REGKEY: ${ASSURANCE_BRAND_REGKEY}`);
-  console.log(`-- TIP_BRAND_REGKEY: ${TIP_BRAND_REGKEY}`);
+  console.log(`-- INSTANCE_HANDLE_BOARD_ID: ${INSTANCE_HANDLE_BOARD_ID}`);
+  console.log(`-- ASSURANCE_ISSUER_BOARD_ID: ${ASSURANCE_ISSUER_BOARD_ID}`);
+  console.log(`-- ASSURANCE_BRAND_BOARD_ID: ${ASSURANCE_BRAND_BOARD_ID}`);
+  console.log(`-- TIP_BRAND_BOARD_ID: ${TIP_BRAND_BOARD_ID}`);
 
   // We want the handler to run persistently. (Scripts such as this
   // deploy.js script are ephemeral and all connections to objects
@@ -176,16 +180,17 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   const handlerInstall = E(spawner).install(bundle);
 
   // Spawn the running code
-  const handler = E(handlerInstall).spawn({ publicAPI, http });
+  const handler = E(handlerInstall).spawn({ publicAPI, http, board, inviteIssuer });
   await E(http).registerAPIHandler(handler);
-
 
   // Re-save the constants somewhere where the UI and api can find it.
   const dappConstants = {
-    INSTANCE_REG_KEY,
+    INSTANCE_HANDLE_BOARD_ID,
+    INSTALLATION_HANDLE_BOARD_ID,
+    INVITE_BRAND_BOARD_ID,
     // BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
-    brandRegKeys: { Tip: TIP_BRAND_REGKEY, Assurance: ASSURANCE_BRAND_REGKEY },
-    issuerRegKeys: { Assurance: ASSURANCE_ISSUER_REGKEY },
+    brandBoardIds: { Tip: TIP_BRAND_BOARD_ID, Assurance: ASSURANCE_BRAND_BOARD_ID },
+    issuerBoardIds: { Assurance: ASSURANCE_ISSUER_BOARD_ID },
     BRIDGE_URL: 'http://127.0.0.1:8000',
     API_URL: 'http://127.0.0.1:8000',
   };
