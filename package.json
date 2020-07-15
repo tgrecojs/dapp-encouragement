@@ -24,6 +24,8 @@
     "prettier": "^1.18.2"
   },
   "scripts": {
+    "preinstall":
+    "node -e \"console.warn('please use: agoric install . For details, see https://agoric.com/documentation/'); process.exit(1)\"",
     "OFF-clean": "yarn workspaces run clean",
     "prettier": "yarn workspaces run prettier",
     "lint-fix": "yarn workspaces run lint-fix",
