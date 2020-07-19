@@ -152,13 +152,6 @@
     "@agoric/default-evaluate-options" "^0.3.3"
     esm "^3.2.5"
 
-"@agoric/eventual-send@^0.5.0":
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/@agoric/eventual-send/-/eventual-send-0.5.1.tgz#3406a65cf5c52fa0e047b4f522a5a5d4c99a6fd3"
-  integrity sha512-h/tjgsfoHfrhmdeg5PyxIGaMiYhxRZ4voGGRDx0QvzCcLgJLHjQeqH3z+Hgne+37NIzLmMA0oxXBfX8Bxw2Reg==
-  dependencies:
-    "@agoric/harden" "^0.0.4"
-
 "@agoric/eventual-send@^0.6.0":
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/@agoric/eventual-send/-/eventual-send-0.6.0.tgz#9592a208cf81f5ff9ec1f4dce3f7cefaef4c16ec"

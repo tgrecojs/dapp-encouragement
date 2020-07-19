@@ -25,8 +25,8 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "@agoric/eventual-send": "^0.6.0",
-    "@agoric/harden": "^0.0.4",
+    "@agoric/eventual-send": "^0.9.3",
+    "@agoric/harden": "^0.0.8",
     "esm": "^3.2.5"
   },
   "eslintConfig": {
