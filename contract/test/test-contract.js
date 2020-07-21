@@ -6,18 +6,29 @@ import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
+import { evalContractBundle } from '@agoric/zoe/src/evalContractCode';
 
 import { makeZoe } from '@agoric/zoe';
 import produceIssuer from '@agoric/ertp';
 
 const contractPath = `${__dirname}/../src/contract`;
 
+function makeFakeVatAdmin() {
+  return harden({
+    createVat: bundle => {
+      return harden({
+        root: E(evalContractBundle(bundle)).buildRootObject(),
+      });
+    },
+  });
+}
+
 test('contract with valid offers', async t => {
   t.plan(10);
   try {
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
-    const zoe = makeZoe();
+    const zoe = makeZoe(makeFakeVatAdmin());
 
     // Get the Zoe invite issuer from Zoe.
     const inviteIssuer = await E(zoe).getInviteIssuer();
