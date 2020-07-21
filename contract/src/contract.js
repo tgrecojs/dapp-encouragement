@@ -1,13 +1,13 @@
 // @ts-check
 import harden from '@agoric/harden';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 import { produceNotifier } from '@agoric/notifier';
 import { makeZoeHelpers } from '@agoric/zoe/src/contractSupport/zoeHelpers';
 
 /**
  * This contract does a few interesting things.
  *
- * @typedef {import('../zoe').ContractFacet} ContractFacet
+ * @typedef {import('@agoric/zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf
  */
 const makeContract = zcf => {
@@ -21,7 +21,7 @@ const makeContract = zcf => {
 
   const { escrowAndAllocateTo, rejectOffer } = makeZoeHelpers(zcf);
 
-  const { issuer, amountMath: assuranceAmountMath, mint } = produceIssuer(
+  const { issuer, amountMath: assuranceAmountMath, mint } = makeIssuerKit(
     'Assurance',
     'set',
   );

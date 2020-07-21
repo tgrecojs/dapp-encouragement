@@ -80,7 +80,7 @@ export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) =
               const depositFacet = E(board).getValue(depositFacetId);
               const invite = await E(publicAPI).makeInvite();
               const inviteAmount = await E(inviteIssuer).getAmountOf(invite);
-              const { extent: [{ handle }]} = inviteAmount;
+              const { value: [{ handle }]} = inviteAmount;
               const inviteHandleBoardId = await E(board).getId(handle);
               const updatedOffer = { ...offer, inviteHandleBoardId };
               E(depositFacet).receive(invite);

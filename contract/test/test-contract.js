@@ -8,7 +8,7 @@ import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
 
 import { makeZoe } from '@agoric/zoe';
-import produceIssuer from '@agoric/ertp';
+import makeIssuerKit from '@agoric/ertp';
 
 const contractPath = `${__dirname}/../src/contract`;
 
@@ -46,7 +46,7 @@ test('contract with valid offers', async t => {
       issuer: bucksIssuer,
       mint: bucksMint,
       amountMath: bucksAmountMath,
-    } = produceIssuer('bucks');
+    } = makeIssuerKit('bucks');
 
     // Let's give ourselves 5 bucks to start
     const bucks5 = bucksAmountMath.make(5);

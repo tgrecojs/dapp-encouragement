@@ -113,7 +113,7 @@ export default async function main() {
             want: {
               Assurance: {
                 pursePetname: intoPurse,
-                extent: [],
+                value: [],
               },
             },
           };
@@ -134,7 +134,7 @@ export default async function main() {
               Tip: {
                 // The pursePetname identifies which purse we want to use
                 pursePetname: selects.$tipPurse.value,
-                extent: Number($inputAmount.value),
+                value: Number($inputAmount.value),
               },
             },
             ...optWant,

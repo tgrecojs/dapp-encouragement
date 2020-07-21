@@ -10,7 +10,7 @@ const allowedBrandBoardIds = [tipBrandBoardId];
  * @typedef {Object.<string, HTMLOptionElement>} Purse
  * @property {string} brandPetname
  * @property {string} pursePetname
- * @property {any} extent
+ * @property {any} value
  * @property {string} brandBoardId
  */
 
@@ -83,7 +83,7 @@ const updateOptions = (key, existing, currents, names, selects, showBalances = t
       switch (key) {
         case 'pursePetname':
           if (showBalances) {
-            newText = `${current[key]} (${current.extent} ${current.brandPetname})`
+            newText = `${current[key]} (${current.value} ${current.brandPetname})`
           } else {
             newText = `${current[key]}`;
           }
