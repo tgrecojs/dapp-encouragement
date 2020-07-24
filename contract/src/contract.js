@@ -5,7 +5,7 @@ import { produceNotifier } from '@agoric/notifier';
 import { makeZoeHelpers } from '@agoric/zoe/src/contractSupport/zoeHelpers';
 
 /**
- * This contract does a few interesting things.
+ * This contract provides encouragement. For a small donation it provides more.
  *
  * @typedef {import('../zoe').ContractFacet} ContractFacet
  * @param {ContractFacet} zcf

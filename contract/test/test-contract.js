@@ -48,7 +48,7 @@ test('contract with valid offers', async t => {
     const installedBundle = await E(zoe).getInstallation(installationHandle);
     const code = installedBundle.source;
     t.ok(
-      code.includes(`This contract does a few interesting things.`),
+      code.includes(`This contract provides encouragement. `),
       `the code installed passes a quick check of what we intended to install`,
     );
 
@@ -102,9 +102,9 @@ test('contract with valid offers', async t => {
     // getNotifier() function that returns a notifier we can subscribe
     // to, in order to get updates about changes to the state of the
     // contract.
-    const notifier = publicAPI.getNotifier();
-    const { value, updateHandle } = await notifier.getUpdateSince();
-    const nextUpdateP = notifier.getUpdateSince(updateHandle);
+    const notifier = E(publicAPI).getNotifier();
+    const { value, updateHandle } = await E(notifier).getUpdateSince();
+    const nextUpdateP = E(notifier).getUpdateSince(updateHandle);
 
     // Count starts at 0
     t.equals(value.count, 0, `count starts at 0`);
@@ -151,7 +151,7 @@ test('contract with valid offers', async t => {
         `premium message is as expected`,
       );
 
-      const newResult = await notifier.getUpdateSince();
+      const newResult = await E(notifier).getUpdateSince();
       t.deepEquals(newResult.value.count, 2, `count is now 2`);
 
       // Let's get our Tips
