@@ -103,8 +103,8 @@ test('contract with valid offers', async t => {
     // to, in order to get updates about changes to the state of the
     // contract.
     const notifier = E(publicAPI).getNotifier();
-    const { value, updateHandle } = await E(notifier).getUpdateSince();
-    const nextUpdateP = E(notifier).getUpdateSince(updateHandle);
+    const { value, updateCount } = await E(notifier).getUpdateSince();
+    const nextUpdateP = E(notifier).getUpdateSince(updateCount);
 
     // Count starts at 0
     t.equals(value.count, 0, `count starts at 0`);

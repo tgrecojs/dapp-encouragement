@@ -32,7 +32,7 @@ export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) =
 
     // Wait until the next notification resolves.
     E(notifier)
-      .getUpdateSince(updateResponse.updateHandle)
+      .getUpdateSince(updateResponse.updateCount)
       .then(doOneNotification, fail);
   };
 
@@ -60,7 +60,7 @@ export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) =
           // These are messages we receive from either POST or WebSocket.
           switch (obj.type) {
             case 'encouragement/getEncouragement': {
-              
+
               return harden({
                 type: 'encouragement/getEncouragementResponse',
                 data: await E(publicAPI).getFreeEncouragement(),
@@ -68,7 +68,7 @@ export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) =
             }
 
             case 'encouragement/subscribeNotifications': {
-              
+
               return harden({
                 type: 'encouragement/subscribeNotificationsResponse',
                 data: true,
@@ -84,7 +84,7 @@ export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) =
               const inviteHandleBoardId = await E(board).getId(handle);
               const updatedOffer = { ...offer, inviteHandleBoardId };
               E(depositFacet).receive(invite);
-              
+
               return harden({
                 type: 'encouragement/sendInviteResponse',
                 data: { offer: updatedOffer },
