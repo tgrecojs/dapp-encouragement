@@ -65,7 +65,12 @@ function createSocket({ onConnect, onDisconnect, onMessage }, endpoint = '/priva
   ifr.addEventListener('load', flushQueue);
 
   // FIXME: Don't assume our location.
-  ifr.src = 'lib/agoric-wallet.html';
+  const queryPos = endpoint.indexOf('?');
+  if (queryPos >= 0) {
+    ifr.src = `lib/agoric-wallet.html${endpoint.substr(queryPos)}`;
+  } else {
+    ifr.src = 'lib/agoric-wallet.html';
+  }
   if (onMessage) {
     messageSubscriptions.add(onMessage);
   }

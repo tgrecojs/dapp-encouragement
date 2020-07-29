@@ -87,7 +87,7 @@ export default async function main() {
 
   const $encourageMe = /** @type {HTMLInputElement} */ (document.getElementById('encourageMe'));
   
-  const walletSend = await connect('wallet', walletRecv).then(walletSend => {
+  const walletSend = await connect('wallet', walletRecv, '?suggestedDappPetname=Encouragement').then(walletSend => {
     walletSend({ type: 'walletGetPurses'});
     walletSend({ type: 'walletGetDepositFacetId', brandBoardId: INVITE_BRAND_BOARD_ID});
     walletSend({

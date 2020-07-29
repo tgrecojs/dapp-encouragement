@@ -30,7 +30,7 @@
           if (window.parent !== window) {
             window.parent.postMessage({ type: 'walletURL', walletURL }, '*');
           }
-          bridgeURL = `${walletURL}-bridge.html`;
+          bridgeURL = `${walletURL}-bridge.html${location.search}`;
           bridgeOrigin = new URL(bridgeURL).origin;
           console.log('Agoric wallet origin', bridgeOrigin);
           ifr.src = bridgeURL;
