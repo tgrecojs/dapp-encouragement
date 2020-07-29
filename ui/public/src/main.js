@@ -7,6 +7,9 @@ const {
   INVITE_BRAND_BOARD_ID, 
   INSTANCE_HANDLE_BOARD_ID, 
   INSTALLATION_HANDLE_BOARD_ID,
+  issuerBoardIds: {
+    Assurance: ASSURANCE_ISSUER_BOARD_ID,
+  },
 } = dappConstants;
 
 /**
@@ -87,6 +90,11 @@ export default async function main() {
   const walletSend = await connect('wallet', walletRecv).then(walletSend => {
     walletSend({ type: 'walletGetPurses'});
     walletSend({ type: 'walletGetDepositFacetId', brandBoardId: INVITE_BRAND_BOARD_ID});
+    walletSend({
+      type: 'walletSuggestIssuer',
+      petname: 'Assurance',
+      boardId: ASSURANCE_ISSUER_BOARD_ID,
+    });
     return walletSend;
   });
 
