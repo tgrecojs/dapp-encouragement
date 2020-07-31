@@ -1,10 +1,23 @@
 // @ts-check
 
 import dappConstants from '../lib/constants.js';
+import { uniquify } from '../lib/uniquify.js';
 
 // TODO: Allow multiple brands for tipping.
 const { Tip: tipBrandBoardId, Assurance: assuranceBrandBoardId } = dappConstants.brandBoardIds;
 const allowedBrandBoardIds = [tipBrandBoardId];
+
+/**
+ * @type {WeakMap<HTMLOptionElement, string | string[]>}
+ */
+const optionToPetname = new WeakMap();
+
+/**
+ * @param {HTMLSelectElement}
+ */
+export const selectedOptionPetname = selector => {
+  return optionToPetname.get(selector.options[selector.selectedIndex]);
+}
 
 /**
  * @typedef {Object.<string, HTMLOptionElement>} Purse
@@ -46,7 +59,15 @@ let allPurses = [];
  * @param {any} b
  * @returns {number} -1, 0, or 1
  */
-const cmp = (a, b) => (a < b ? -1 : a === b ? 0 : 1);
+const cmp = (a, b) => {
+  if (Array.isArray(a)) {
+    a = a.join('.');
+  }
+  if (Array.isArray(b)) {
+    b = b.join('.');
+  }
+  return (a < b ? -1 : a === b ? 0 : 1);
+};
 
 /**
  * Adjust the option elements in existing.
@@ -80,27 +101,33 @@ const updateOptions = (key, existing, currents, names, selects, showBalances = t
     } else {
       const current = currents[i];
       let newText;
+      let value;
+      if (Array.isArray(current[key])) {
+        value = current[key].join('.');
+      } else {
+        value = current[key];
+      }
       switch (key) {
         case 'pursePetname':
           if (showBalances) {
-            newText = `${current[key]} (${current.value} ${current.brandPetname})`
+            newText = `${value} (${current.value} ${current.brandPetname})`
           } else {
-            newText = `${current[key]}`;
+            newText = `${value}`;
           }
           break;
         default: 
-          newText = `${current[key]}`;
+          newText = `${value}`;
       }
       if (c < 0) {
         // Haven't got yet, so insert.
-        const value = current[key];
         existing.splice(j, 0, current);
         for (const name of names) {
           const option = document.createElement('option');
           option.setAttribute('value', value);
+          optionToPetname.set(option, uniquify(current[key]));
           existing[j][name] = option;
           if (j + 1 < existing.length) {
-            selects[name].insertBefore(existing[j + 1][name], option);
+            selects[name].insertBefore(option, existing[j + 1][name]);
           } else {
             selects[name].append(option);
           }
@@ -111,6 +138,21 @@ const updateOptions = (key, existing, currents, names, selects, showBalances = t
         existing[j][name].innerText = newText;
       }
       i += 1;
+      j += 1;
+    }
+  }
+
+  const lastKey = currents[currents.length - 1][key];
+  while (j < existing.length) {
+    // Remove the excess.
+    const c = cmp(lastKey, existing[j][key]);
+    if (c < 0) {
+      // Have an extra one, so delete.
+      for (const name of names) {
+        selects[name].removeChild(existing[j][name]);
+      }
+      existing.splice(j, 1);
+    } else {
       j += 1;
     }
   }
@@ -161,9 +203,10 @@ export function walletUpdatePurses(purses, selects) {
  */
 export function flipSelectedBrands(selects) {
   let i = 0;
+  const selectedPetname = selectedOptionPetname(selects.$brands);
   while (i < tipPurses.length) {
     const purse = tipPurses[i];
-    if (purse.brandPetname !== selects.$brands.value) {
+    if (uniquify(purse.brandPetname) !== selectedPetname) {
       // Remove the purse.
       selects.$tipPurse.removeChild(purse.$tipPurse);
       delete purse.$tipPurse;
@@ -176,7 +219,7 @@ export function flipSelectedBrands(selects) {
   updateOptions(
     'pursePetname',
     tipPurses,
-    allPurses.filter(({ brandPetname }) => brandPetname === selects.$brands.value),
+    allPurses.filter(({ brandPetname }) => uniquify(brandPetname) === selectedPetname),
     ['$tipPurse'],
     selects,
   );
