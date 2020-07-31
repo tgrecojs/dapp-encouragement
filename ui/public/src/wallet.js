@@ -1,23 +1,11 @@
 // @ts-check
 
 import dappConstants from '../lib/constants.js';
-import { uniquify } from '../lib/uniquify.js';
+import { implode } from '../lib/implode.js';
 
 // TODO: Allow multiple brands for tipping.
 const { Tip: tipBrandBoardId, Assurance: assuranceBrandBoardId } = dappConstants.brandBoardIds;
 const allowedBrandBoardIds = [tipBrandBoardId];
-
-/**
- * @type {WeakMap<HTMLOptionElement, string | string[]>}
- */
-const optionToPetname = new WeakMap();
-
-/**
- * @param {HTMLSelectElement}
- */
-export const selectedOptionPetname = selector => {
-  return optionToPetname.get(selector.options[selector.selectedIndex]);
-}
 
 /**
  * @typedef {Object.<string, HTMLOptionElement>} Purse
@@ -123,8 +111,7 @@ const updateOptions = (key, existing, currents, names, selects, showBalances = t
         existing.splice(j, 0, current);
         for (const name of names) {
           const option = document.createElement('option');
-          option.setAttribute('value', value);
-          optionToPetname.set(option, uniquify(current[key]));
+          option.setAttribute('value', implode(current[key]));
           existing[j][name] = option;
           if (j + 1 < existing.length) {
             selects[name].insertBefore(option, existing[j + 1][name]);
@@ -203,10 +190,10 @@ export function walletUpdatePurses(purses, selects) {
  */
 export function flipSelectedBrands(selects) {
   let i = 0;
-  const selectedPetname = selectedOptionPetname(selects.$brands);
+  const selectedPetname = selects.$brands.value;
   while (i < tipPurses.length) {
     const purse = tipPurses[i];
-    if (uniquify(purse.brandPetname) !== selectedPetname) {
+    if (implode(purse.brandPetname) !== selectedPetname) {
       // Remove the purse.
       selects.$tipPurse.removeChild(purse.$tipPurse);
       delete purse.$tipPurse;
@@ -219,7 +206,7 @@ export function flipSelectedBrands(selects) {
   updateOptions(
     'pursePetname',
     tipPurses,
-    allPurses.filter(({ brandPetname }) => uniquify(brandPetname) === selectedPetname),
+    allPurses.filter(({ brandPetname }) => implode(brandPetname) === selectedPetname),
     ['$tipPurse'],
     selects,
   );

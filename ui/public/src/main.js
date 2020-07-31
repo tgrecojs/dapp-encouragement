@@ -1,7 +1,8 @@
 // @ts-check
 import dappConstants from '../lib/constants.js';
 import { connect } from './connect.js';
-import { walletUpdatePurses, flipSelectedBrands, selectedOptionPetname } from './wallet.js';
+import { walletUpdatePurses, flipSelectedBrands } from './wallet.js';
+import { explode } from '../lib/implode';
 
 const { 
   INVITE_BRAND_BOARD_ID, 
@@ -120,7 +121,7 @@ export default async function main() {
           optWant = {
             want: {
               Assurance: {
-                pursePetname: selectedOptionPetname(selects.$intoPurse),
+                pursePetname: explode(selects.$intoPurse.value),
                 value: [],
               },
             },
@@ -141,7 +142,7 @@ export default async function main() {
             give: {
               Tip: {
                 // The pursePetname identifies which purse we want to use
-                pursePetname: selectedOptionPetname(selects.$tipPurse),
+                pursePetname: explode(selects.$tipPurse.value),
                 value: Number($inputAmount.value),
               },
             },
