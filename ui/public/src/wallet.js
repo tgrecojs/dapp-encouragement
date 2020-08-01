@@ -90,15 +90,16 @@ const updateOptions = (key, existing, currents, names, selects, showBalances = t
       const current = currents[i];
       let newText;
       let value;
-      if (Array.isArray(current[key])) {
-        value = current[key].join('.');
+      const currentKey = current[key];
+      if (Array.isArray(currentKey)) {
+        value = currentKey.join('.');
       } else {
-        value = current[key];
+        value = currentKey;
       }
       switch (key) {
         case 'pursePetname':
           if (showBalances) {
-            newText = `${value} (${current.value} ${current.brandPetname})`
+            newText = `${value} (${current.value} ${current.brandPetname})`;
           } else {
             newText = `${value}`;
           }
@@ -111,7 +112,7 @@ const updateOptions = (key, existing, currents, names, selects, showBalances = t
         existing.splice(j, 0, current);
         for (const name of names) {
           const option = document.createElement('option');
-          option.setAttribute('value', implode(current[key]));
+          option.setAttribute('value', implode(currentKey));
           existing[j][name] = option;
           if (j + 1 < existing.length) {
             selects[name].insertBefore(option, existing[j + 1][name]);

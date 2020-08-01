@@ -157,7 +157,7 @@ export default async function main() {
             offer,
           },
         });
-        alert('Please approve your tip, then close the wallet.')
+        // alert('Please approve your tip, then close the wallet.')
       }
     });
     
