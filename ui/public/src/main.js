@@ -90,7 +90,17 @@ export default async function main() {
   
   const walletSend = await connect('wallet', walletRecv, '?suggestedDappPetname=Encouragement').then(walletSend => {
     walletSend({ type: 'walletGetPurses'});
-    walletSend({ type: 'walletGetDepositFacetId', brandBoardId: INVITE_BRAND_BOARD_ID});
+    walletSend({ type: 'walletGetDepositFacetId', brandBoardId: INVITE_BRAND_BOARD_ID });
+    walletSend({
+      type: 'walletSuggestInstallation',
+      petname: 'Installation',
+      boardId: INSTALLATION_HANDLE_BOARD_ID,
+    });
+    walletSend({
+      type: 'walletSuggestInstance',
+      petname: 'Instance',
+      boardId: INSTANCE_HANDLE_BOARD_ID,
+    });
     walletSend({
       type: 'walletSuggestIssuer',
       petname: 'Assurance',
