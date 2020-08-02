@@ -83,7 +83,7 @@ export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) =
               const { value: [{ handle }]} = inviteAmount;
               const inviteHandleBoardId = await E(board).getId(handle);
               const updatedOffer = { ...offer, inviteHandleBoardId };
-              E(depositFacet).receive(invite);
+              await E(depositFacet).receive(invite);
 
               return harden({
                 type: 'encouragement/sendInviteResponse',

@@ -130,18 +130,20 @@ const updateOptions = (key, existing, currents, names, selects, showBalances = t
     }
   }
 
-  const lastKey = currents[currents.length - 1][key];
-  while (j < existing.length) {
-    // Remove the excess.
-    const c = cmp(lastKey, existing[j][key]);
-    if (c < 0) {
-      // Have an extra one, so delete.
-      for (const name of names) {
-        selects[name].removeChild(existing[j][name]);
+  if (currents.length > 0) {
+    const lastKey = currents[currents.length - 1][key];
+    while (j < existing.length) {
+      // Remove the excess.
+      const c = cmp(lastKey, existing[j][key]);
+      if (c < 0) {
+        // Have an extra one, so delete.
+        for (const name of names) {
+          selects[name].removeChild(existing[j][name]);
+        }
+        existing.splice(j, 1);
+      } else {
+        j += 1;
       }
-      existing.splice(j, 1);
-    } else {
-      j += 1;
     }
   }
 
