@@ -20,12 +20,13 @@ debugChange();
 /**
  * @param {string} id
  * @param {(obj: { type: string, data: any }) => void} recv
+ * @param {string} [query='']
  */
-export const connect = (id, recv) => {
+export const connect = (id, recv, query = '') => {
   const $status = /** @type {HTMLSpanElement} */(document.getElementById(`${id}-status`));
   $status.innerHTML = 'Connecting...';
 
-  const endpoint = id === 'wallet' ? '/private/wallet-bridge' : '/api';
+  const endpoint = id === 'wallet' ? `/private/wallet-bridge${query}` : '/api';
 
   /**
    * @param {{ type: string, data: any}} obj

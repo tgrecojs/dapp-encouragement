@@ -2,11 +2,15 @@
 import dappConstants from '../lib/constants.js';
 import { connect } from './connect.js';
 import { walletUpdatePurses, flipSelectedBrands } from './wallet.js';
+import { explode } from '../lib/implode';
 
 const { 
   INVITE_BRAND_BOARD_ID, 
   INSTANCE_HANDLE_BOARD_ID, 
   INSTALLATION_HANDLE_BOARD_ID,
+  issuerBoardIds: {
+    Assurance: ASSURANCE_ISSUER_BOARD_ID,
+  },
 } = dappConstants;
 
 /**
@@ -84,9 +88,27 @@ export default async function main() {
 
   const $encourageMe = /** @type {HTMLInputElement} */ (document.getElementById('encourageMe'));
   
-  const walletSend = await connect('wallet', walletRecv).then(walletSend => {
+  // All the "suggest" messages below are backward-compatible:
+  // the new wallet will confirm them with the user, but the old
+  // wallet will just ignore the messages and allow access immediately.
+  const walletSend = await connect('wallet', walletRecv, '?suggestedDappPetname=Encouragement').then(walletSend => {
     walletSend({ type: 'walletGetPurses'});
-    walletSend({ type: 'walletGetDepositFacetId', brandBoardId: INVITE_BRAND_BOARD_ID});
+    walletSend({ type: 'walletGetDepositFacetId', brandBoardId: INVITE_BRAND_BOARD_ID });
+    walletSend({
+      type: 'walletSuggestInstallation',
+      petname: 'Installation',
+      boardId: INSTALLATION_HANDLE_BOARD_ID,
+    });
+    walletSend({
+      type: 'walletSuggestInstance',
+      petname: 'Instance',
+      boardId: INSTANCE_HANDLE_BOARD_ID,
+    });
+    walletSend({
+      type: 'walletSuggestIssuer',
+      petname: 'Assurance',
+      boardId: ASSURANCE_ISSUER_BOARD_ID,
+    });
     return walletSend;
   });
 
@@ -112,7 +134,7 @@ export default async function main() {
           optWant = {
             want: {
               Assurance: {
-                pursePetname: intoPurse,
+                pursePetname: explode(selects.$intoPurse.value),
                 value: [],
               },
             },
@@ -133,7 +155,7 @@ export default async function main() {
             give: {
               Tip: {
                 // The pursePetname identifies which purse we want to use
-                pursePetname: selects.$tipPurse.value,
+                pursePetname: explode(selects.$tipPurse.value),
                 value: Number($inputAmount.value),
               },
             },
@@ -148,7 +170,7 @@ export default async function main() {
             offer,
           },
         });
-        alert('Please approve your tip, then close the wallet.')
+        // alert('Please approve your tip, then close the wallet.')
       }
     });
     

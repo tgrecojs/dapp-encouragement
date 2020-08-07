@@ -83,7 +83,11 @@ export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) =
               const { value: [{ handle }]} = inviteAmount;
               const inviteHandleBoardId = await E(board).getId(handle);
               const updatedOffer = { ...offer, inviteHandleBoardId };
-              E(depositFacet).receive(invite);
+              // We need to wait for the invite to be
+              // received, or we will possibly win the race of
+              // proposing the offer before the invite is ready.
+              // TODO: We should make this process more robust.
+              await E(depositFacet).receive(invite);
 
               return harden({
                 type: 'encouragement/sendInviteResponse',
