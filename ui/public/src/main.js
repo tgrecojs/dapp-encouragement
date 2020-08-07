@@ -88,6 +88,9 @@ export default async function main() {
 
   const $encourageMe = /** @type {HTMLInputElement} */ (document.getElementById('encourageMe'));
   
+  // All the "suggest" messages below are backward-compatible:
+  // the new wallet will confirm them with the user, but the old
+  // wallet will just ignore the messages and allow access immediately.
   const walletSend = await connect('wallet', walletRecv, '?suggestedDappPetname=Encouragement').then(walletSend => {
     walletSend({ type: 'walletGetPurses'});
     walletSend({ type: 'walletGetDepositFacetId', brandBoardId: INVITE_BRAND_BOARD_ID });
