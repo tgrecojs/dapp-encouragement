@@ -1,5 +1,6 @@
 // @ts-check
 import fs from 'fs';
+import '@agoric/zoe/exported';
 import { E } from '@agoric/eventual-send';
 
 // This script takes our contract code, installs it on Zoe, and makes
@@ -10,11 +11,16 @@ import { E } from '@agoric/eventual-send';
  * @typedef {Object} DeployPowers The special powers that agoric deploy gives us
  * @property {(path: string) => { moduleFormat: string, source: string }} bundleSource
  * @property {(path: string) => string} pathResolve
+ * 
+ * @typedef {Object} Board
+ * @property {(id: string) => any} getValue
+ * @property {(value: any) => string} getId
+ * @property {(value: any) => boolean} has
+ * @property {() => [string]} ids
  */
 
 /**
- *
- * @param {*} homePromise
+ * @param {Promise<{zoe: ZoeService, board: Board}>} homePromise
  * @param {DeployPowers} powers
  */
 export default async function deployContract(

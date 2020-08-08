@@ -5,6 +5,7 @@ import fs from 'fs';
 import installationConstants from '../ui/public/conf/installationConstants.js';
 import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
+import '@agoric/zoe/exported';
 
 // deploy.js runs in an ephemeral Node.js outside of swingset. The
 // spawner runs within ag-solo, so is persistent.  Once the deploy.js
@@ -17,11 +18,18 @@ const TIP_ISSUER_PETNAME = process.env.TIP_ISSUER_PETNAME || 'moola';
  * @typedef {Object} DeployPowers The special powers that `agoric deploy` gives us
  * @property {(path: string) => { moduleFormat: string, source: string }} bundleSource
  * @property {(path: string) => string} pathResolve
+ * 
+ * @typedef {Object} Board
+ * @property {(id: string) => any} getValue
+ * @property {(value: any) => string} getId
+ * @property {(value: any) => boolean} has
+ * @property {() => [string]} ids
  */
 
 /**
- * @param {any} homePromise A promise for the references
- * available from REPL home
+ * @typedef {{ zoe: ZoeService, board: Board, spawner, wallet, uploads, http }} Home
+ * @param {Promise<Home>} homePromise 
+ * A promise for the references available from REPL home
  * @param {DeployPowers} powers
  */
 export default async function deployApi(homePromise, { bundleSource, pathResolve }) {
@@ -30,18 +38,18 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   const home = await homePromise;
 
   // Unpack the references.
-  const { 
+  const {
 
     // *** LOCAL REFERENCES ***
 
     // This wallet only exists on this machine, and only you have
     // access to it. The wallet stores purses and handles transactions.
-    wallet, 
+    wallet,
 
     // Scratch is a map only on this machine, and can be used for
     // communication in objects between processes/scripts on this
     // machine.
-    uploads: scratch,  
+    uploads: scratch,
 
     // The spawner persistently runs scripts within ag-solo, off-chain.
     spawner,
@@ -51,7 +59,7 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
     // Zoe lives on-chain and is shared by everyone who has access to
     // the chain. In this demo, that's just you, but on our testnet,
     // everyone has access to the same Zoe.
-    zoe, 
+    zoe,
 
     // The http request handler.
     // TODO: add more explanation
@@ -70,12 +78,12 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   // To get the backend of our dapp up and running, first we need to
   // grab the installationHandle that our contract deploy script put
   // in the public board.
-  const { 
+  const {
     INSTALLATION_HANDLE_BOARD_ID,
     CONTRACT_NAME,
   } = installationConstants;
-  const encouragementContractInstallationHandle = await E(board).getValue(INSTALLATION_HANDLE_BOARD_ID);
-  
+  const encouragementInstallation = await E(board).getValue(INSTALLATION_HANDLE_BOARD_ID);
+
   // Second, we can use the installationHandle to create a new
   // instance of our contract code on Zoe. A contract instance is a running
   // program that can take offers through Zoe. Creating a contract
@@ -108,58 +116,63 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
     process.exit(1);
   }
 
-  // Find its brand board id so we can communicate the issuer to other wallets.
-  const tipBrand = await E(tipIssuer).getBrand();
-  const TIP_BRAND_BOARD_ID = await E(board).getId(tipBrand);
-
+  console.log('Installing contract');
   const issuerKeywordRecord = harden({ Tip: tipIssuer });
   const {
-    invite: adminInvite,
-    instanceRecord: { publicAPI, handle: instanceHandle },
-  } = await E(zoe)
-    .makeInstance(encouragementContractInstallationHandle, issuerKeywordRecord);
-  console.log('- SUCCESS! contract instance is running on Zoe');
-  
-  const inviteIssuer = await E(zoe).getInviteIssuer();
-  const inviteBrand = await E(inviteIssuer).getBrand()
-  const INVITE_BRAND_BOARD_ID = await E(board).getId(inviteBrand);
+    creatorInvitation: adminInvite,
+    creatorFacet
+  } = await E(zoe).makeInstance(encouragementInstallation, issuerKeywordRecord);
+  const instance = await E(creatorFacet).getInstance();
+  const publicAPI = E(zoe).getPublicFacet(instance);
 
-  // An instanceHandle is an opaque identifier like an installationHandle.
-  // instanceHandle identifies an instance of a running contract.
-  if (!instanceHandle) {
-    console.log('- FAILURE! contract instance NOT retrieved.');
-    throw new Error('Unable to create contract instance');
-  }
+  console.log('- SUCCESS! contract instance is running on Zoe');
 
   // Let's use the adminInvite to make an offer. Note that we aren't
   // specifying any proposal, and we aren't escrowing any assets with
   // Zoe in this offer. We are doing this so that Zoe will eventually
   // give us a payout of all of the tips. We can trigger this payout
   // by calling the `complete` function on the `completeObj`.
-  const {
-    payout: adminPayoutP,
-    outcome: adminOutcomeP, 
-    completeObj,
-  } = await E(zoe).offer(adminInvite);
-
-  const outcome = await adminOutcomeP;
-  console.log(`-- ${outcome}`);
+  console.log('Retrieving admin');
+  const adminSeat = E(zoe).offer(adminInvite);
+  const outcomeP = E(adminSeat).getOfferResult();
 
   // When the promise for a payout resolves, we want to deposit the
   // payments in our purses. We will put the adminPayoutP and
   // completeObj in our scratch location so that we can share the
   // live objects with the shutdown.js script. 
-  E(scratch).set('adminPayoutP', adminPayoutP);
-  E(scratch).set('completeObj', completeObj);
+  E(scratch).set('adminPayoutP', E(adminSeat).getPayouts());
+  E(scratch).set('adminSeat', adminSeat);
+
+  const outcome = await outcomeP;
+  console.log(`-- ${outcome}`);
+
+  console.log('Retrieving Board IDs for issuers and brands');
+  const inviteIssuerP = E(zoe).getInvitationIssuer();
+  const inviteBrandP = E(inviteIssuerP).getBrand();
+
+  const assuranceIssuerP = E(publicAPI).getAssuranceIssuer();
+  const asurranceBrandP = E(assuranceIssuerP).getBrand();
+  const tipBrandP = E(tipIssuer).getBrand();
 
   // Now that we've done all the admin work, let's share this
   // instanceHandle by adding it to the board. Any users of our
   // contract will use this instanceHandle to get invites to the
   // contract in order to make an offer.
-  const INSTANCE_HANDLE_BOARD_ID = await E(board).getId(instanceHandle);
-  const assuranceIssuer = await E(publicAPI).getAssuranceIssuer();
-  const ASSURANCE_ISSUER_BOARD_ID = await E(board).getId(assuranceIssuer);
-  const ASSURANCE_BRAND_BOARD_ID = await E(board).getId(await E(assuranceIssuer).getBrand());
+  const inviteIssuer = await inviteIssuerP;
+  const tipBrand = await tipBrandP;
+  const assuranceIssuer = await assuranceIssuerP;
+  const assuranceBrand = await asurranceBrandP;
+
+  const [TIP_BRAND_BOARD_ID,
+    INSTANCE_HANDLE_BOARD_ID,
+    ASSURANCE_BRAND_BOARD_ID,
+    ASSURANCE_ISSUER_BOARD_ID]
+    = await Promise.all([
+      E(board).getId(tipBrand),
+      E(board).getId(instance),
+      E(board).getId(assuranceBrand),
+      E(board).getId(assuranceIssuer),
+    ]);
 
   console.log(`-- Contract Name: ${CONTRACT_NAME}`);
   console.log(`-- INSTANCE_HANDLE_BOARD_ID: ${INSTANCE_HANDLE_BOARD_ID}`);
@@ -175,13 +188,16 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
 
   // Bundle up the handler code
   const bundle = await bundleSource(pathResolve('./src/handler.js'));
-  
+
   // Install it on the spawner
   const handlerInstall = E(spawner).install(bundle);
 
   // Spawn the running code
   const handler = E(handlerInstall).spawn({ publicAPI, http, board, inviteIssuer });
   await E(http).registerAPIHandler(handler);
+
+  const inviteBrand = await inviteBrandP;
+  const INVITE_BRAND_BOARD_ID = await E(board).getId(inviteBrand);
 
   // Re-save the constants somewhere where the UI and api can find it.
   const dappConstants = {
