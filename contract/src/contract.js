@@ -65,7 +65,7 @@ const start = async (zcf, terms) => {
       encouragement = messages.premium;
       
       // Create a non-fungible serial number for the admin to trade
-      const assuranceAmount = assuranceMath.make([count + 1]);
+      const assuranceAmount = assuranceMath.make(harden([count + 1]));
       assuranceMint.mintGains({ Assurance: assuranceAmount }, adminSeat);
 
       const userStage = seat.stage({
