@@ -1,19 +1,15 @@
 // @ts-check
 import '@agoric/zoe/exported';
 import harden from '@agoric/harden';
-import makeIssuerKit from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 
 /**
  * This contract provides encouragement. For a small donation it provides more.
  *
  * @param {ContractFacet} zcf
- * 
+ *
  */
-const start = async (zcf, terms) => {
-  // FIXME REMOVE
-  console.log("TERMS ", terms);
-
+const start = async (zcf, _terms) => {
   let count = 0;
   const messages = {
     basic: `You're doing great!`,
@@ -21,16 +17,18 @@ const start = async (zcf, terms) => {
   };
   const { notifier, updater } = makeNotifierKit(undefined);
 
-  const assuranceMint = await zcf.makeZCFMint('Assurance','set');
+  const assuranceMint = await zcf.makeZCFMint('Assurance', 'set');
   // Now ZCF has saved the issuer, brand, and local amountMath so that they
   // can be accessed synchronously.
   const { amountMath: assuranceMath, issuer } = assuranceMint.getIssuerRecord();
 
-  const { brandKeywordRecord: { Tip: tipBrand } } = zcf.getInstanceRecord();
+  const {
+    brandKeywordRecord: { Tip: tipBrand },
+  } = zcf.getInstanceRecord();
   const tipAmountMath = zcf.getAmountMath(tipBrand);
 
   /** @type {ZCFSeat} */
-  let adminSeat;
+  let creatorSeat;
 
   const updateNotification = () => {
     updater.updateState({ messages, count });
@@ -40,20 +38,19 @@ const start = async (zcf, terms) => {
   /**
    * @param {ZCFSeat} seat
    */
-  const adminHook = seat => {
-    adminSeat = seat;
-    return `admin invite redeemed`;
+  const create = seat => {
+    creatorSeat = seat;
+    return `creator invitation redeemed`;
   };
 
   /**
    * @param {ZCFSeat} seat
    */
   const encourage = seat => {
-    // if the adminOffer is no longer active (i.e. the admin cancelled
-    // their offer and retrieved their tips), we just don't give any
+    // if the creatorSeat is no longer active (i.e. the creator exited
+    // their seat and retrieved their tips), we just don't give any
     // encouragement.
-    // TODO should this just be checking whether the *contract* has exited?
-    if (adminSeat.hasExited()) {
+    if (creatorSeat.hasExited()) {
       seat.kickOut(`We are no longer giving encouragement`);
     }
 
@@ -63,24 +60,24 @@ const start = async (zcf, terms) => {
     if (tipAmountMath.isGTE(tipAmount, tipAmountMath.make(1))) {
       // if the user gives a tip, we provide a premium encouragement message
       encouragement = messages.premium;
-      
-      // Create a non-fungible serial number for the admin to trade
+
+      // Create a non-fungible serial number for the new assurance
       const assuranceAmount = assuranceMath.make(harden([count + 1]));
-      assuranceMint.mintGains({ Assurance: assuranceAmount }, adminSeat);
+      assuranceMint.mintGains({ Assurance: assuranceAmount }, creatorSeat);
 
       const userStage = seat.stage({
         Tip: tipAmountMath.getEmpty(),
         Assurance: assuranceAmount,
       });
 
-      // reallocate the tip to the adminOffer
-      const adminTips = adminSeat.getAmountAllocated('Tip', tipBrand);
-      const adminStage = adminSeat.stage({
-        Tip: tipAmountMath.add(adminTips, tipAmount),
+      // reallocate the tip to the creatorSeat
+      const creatorTips = creatorSeat.getAmountAllocated('Tip', tipBrand);
+      const creatorStage = creatorSeat.stage({
+        Tip: tipAmountMath.add(creatorTips, tipAmount),
         Assurance: assuranceMath.getEmpty(),
       });
 
-      zcf.reallocate(adminStage, userStage);
+      zcf.reallocate(creatorStage, userStage);
     }
     seat.exit();
     count += 1;
@@ -89,7 +86,7 @@ const start = async (zcf, terms) => {
   };
 
   const publicFacet = {
-    makeInvite() {
+    makeInvitation() {
       return zcf.makeInvitation(encourage, 'encouragement');
     },
     getFreeEncouragement() {
@@ -105,7 +102,7 @@ const start = async (zcf, terms) => {
     },
   };
 
-  const creatorInvitation = zcf.makeInvitation(adminHook, 'admin');
+  const creatorInvitation = zcf.makeInvitation(create, 'creator');
   return harden({ creatorInvitation, publicFacet });
 };
 

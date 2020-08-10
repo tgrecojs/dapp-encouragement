@@ -2,7 +2,7 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) => {
+export default harden(({ publicAPI, http, board, invitationIssuer }, _invitationMaker) => {
   let notifier;
 
   // Here's how you could implement a notification-based
@@ -75,22 +75,22 @@ export default harden(({ publicAPI, http, board, inviteIssuer }, _inviteMaker) =
               });
             }
 
-            case 'encouragement/sendInvite': {
+            case 'encouragement/sendInvitation': {
               const { depositFacetId, offer } = obj.data;
               const depositFacet = E(board).getValue(depositFacetId);
-              const invite = await E(publicAPI).makeInvite();
-              const inviteAmount = await E(inviteIssuer).getAmountOf(invite);
-              const { value: [{ handle }]} = inviteAmount;
-              const inviteHandleBoardId = await E(board).getId(handle);
-              const updatedOffer = { ...offer, inviteHandleBoardId };
-              // We need to wait for the invite to be
+              const invitation = await E(publicAPI).makeInvitation();
+              const invitationAmount = await E(invitationIssuer).getAmountOf(invitation);
+              const { value: [{ handle }]} = invitationAmount;
+              const invitationHandleBoardId = await E(board).getId(handle);
+              const updatedOffer = { ...offer, invitationHandleBoardId };
+              // We need to wait for the invitation to be
               // received, or we will possibly win the race of
-              // proposing the offer before the invite is ready.
+              // proposing the offer before the invitation is ready.
               // TODO: We should make this process more robust.
-              await E(depositFacet).receive(invite);
+              await E(depositFacet).receive(invitation);
 
               return harden({
-                type: 'encouragement/sendInviteResponse',
+                type: 'encouragement/sendInvitationResponse',
                 data: { offer: updatedOffer },
               });
             }

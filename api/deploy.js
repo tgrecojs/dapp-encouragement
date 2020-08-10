@@ -87,9 +87,9 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   // Second, we can use the installationHandle to create a new
   // instance of our contract code on Zoe. A contract instance is a running
   // program that can take offers through Zoe. Creating a contract
-  // instance gives you an invite to the contract. In this case, it is
-  // an admin invite with special authority - whoever redeems this
-  // admin invite will get all of the tips from the encouragement
+  // instance gives you an invitation to the contract. In this case, it is
+  // an admin invitation with special authority - whoever redeems this
+  // admin invitation will get all of the tips from the encouragement
   // contract instance.
 
   // At the time that we make the contract instance, we need to tell
@@ -119,21 +119,20 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   console.log('Installing contract');
   const issuerKeywordRecord = harden({ Tip: tipIssuer });
   const {
-    creatorInvitation: adminInvite,
-    creatorFacet
+    creatorInvitation: adminInvitation,
+    instance,
   } = await E(zoe).makeInstance(encouragementInstallation, issuerKeywordRecord);
-  const instance = await E(creatorFacet).getInstance();
   const publicAPI = E(zoe).getPublicFacet(instance);
 
   console.log('- SUCCESS! contract instance is running on Zoe');
 
-  // Let's use the adminInvite to make an offer. Note that we aren't
+  // Let's use the adminInvitation to make an offer. Note that we aren't
   // specifying any proposal, and we aren't escrowing any assets with
   // Zoe in this offer. We are doing this so that Zoe will eventually
   // give us a payout of all of the tips. We can trigger this payout
   // by calling the `complete` function on the `completeObj`.
   console.log('Retrieving admin');
-  const adminSeat = E(zoe).offer(adminInvite);
+  const adminSeat = E(zoe).offer(adminInvitation);
   const outcomeP = E(adminSeat).getOfferResult();
 
   // When the promise for a payout resolves, we want to deposit the
@@ -147,8 +146,8 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   console.log(`-- ${outcome}`);
 
   console.log('Retrieving Board IDs for issuers and brands');
-  const inviteIssuerP = E(zoe).getInvitationIssuer();
-  const inviteBrandP = E(inviteIssuerP).getBrand();
+  const invitationIssuerP = E(zoe).getInvitationIssuer();
+  const invitationBrandP = E(invitationIssuerP).getBrand();
 
   const assuranceIssuerP = E(publicAPI).getAssuranceIssuer();
   const asurranceBrandP = E(assuranceIssuerP).getBrand();
@@ -156,9 +155,9 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
 
   // Now that we've done all the admin work, let's share this
   // instanceHandle by adding it to the board. Any users of our
-  // contract will use this instanceHandle to get invites to the
+  // contract will use this instanceHandle to get invitations to the
   // contract in order to make an offer.
-  const inviteIssuer = await inviteIssuerP;
+  const invitationIssuer = await invitationIssuerP;
   const tipBrand = await tipBrandP;
   const assuranceIssuer = await assuranceIssuerP;
   const assuranceBrand = await asurranceBrandP;
@@ -193,11 +192,11 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   const handlerInstall = E(spawner).install(bundle);
 
   // Spawn the running code
-  const handler = E(handlerInstall).spawn({ publicAPI, http, board, inviteIssuer });
+  const handler = E(handlerInstall).spawn({ publicAPI, http, board, invitationIssuer });
   await E(http).registerAPIHandler(handler);
 
-  const inviteBrand = await inviteBrandP;
-  const INVITE_BRAND_BOARD_ID = await E(board).getId(inviteBrand);
+  const invitationBrand = await invitationBrandP;
+  const INVITE_BRAND_BOARD_ID = await E(board).getId(invitationBrand);
 
   // Re-save the constants somewhere where the UI and api can find it.
   const dappConstants = {

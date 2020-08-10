@@ -6,10 +6,10 @@ import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
-import { evalContractBundle } from '@agoric/zoe/src/evalContractCode';
-
+import { evalContractBundle } from '@agoric/zoe/src/contractFacet/evalContractCode';
 import { makeZoe } from '@agoric/zoe';
 import makeIssuerKit from '@agoric/ertp';
+import { makePromiseKit } from '@agoric/promise-kit';
 
 const contractPath = `${__dirname}/../src/contract`;
 
@@ -18,6 +18,13 @@ function makeFakeVatAdmin() {
     createVat: bundle => {
       return harden({
         root: E(evalContractBundle(bundle)).buildRootObject(),
+        creatorNode: {
+          done: () => {
+            return makePromiseKit().promise;
+          },
+          terminate: () => {},
+          creatorData: () => ({}),
+        },
       });
     },
   });
@@ -30,22 +37,22 @@ test('contract with valid offers', async t => {
     // testnet. In this test, we must create a new Zoe.
     const zoe = makeZoe(makeFakeVatAdmin());
 
-    // Get the Zoe invite issuer from Zoe.
-    const inviteIssuer = await E(zoe).getInviteIssuer();
+    // Get the Zoe invitation issuer from Zoe.
+    const invitationIssuer = await E(zoe).getInvitationIssuer();
 
     // Pack the contract.
     const contractBundle = await bundleSource(contractPath);
 
-    // Install the contract on Zoe, getting an installationHandle (an
-    // opaque identifier). We can use this installationHandle to look
-    // up the code we installed. Outside of tests, we can also send the
-    // installationHandle to someone else, and they can use it to
-    // create a new contract instance using the same code.
-    const installationHandle = await E(zoe).install(contractBundle);
+    // Install the contract on Zoe, getting an installation. We can
+    // use this installation to look up the code we installed. Outside
+    // of tests, we can also send the installation to someone
+    // else, and they can use it to create a new contract instance
+    // using the same code.
+    const installation = await E(zoe).install(contractBundle);
 
     // Let's check the code. Outside of this test, we would probably
     // want to check more extensively,
-    const installedBundle = await E(zoe).getInstallation(installationHandle);
+    const installedBundle = await E(installation).getBundle();
     const code = installedBundle.source;
     t.ok(
       code.includes(`This contract provides encouragement. `),
@@ -64,45 +71,40 @@ test('contract with valid offers', async t => {
     const bucksPayment = bucksMint.mintPayment(bucks5);
 
     // Create the contract instance, using our new issuer. It returns
-    // an invite, which we will use when we call offer(), and the
-    // instanceRecord, which contains the publicAPI, among other things.
-    const {
-      invite: adminInvite,
-      instanceRecord: { publicAPI },
-    } = await E(zoe).makeInstance(installationHandle, {
-      Tip: bucksIssuer,
-    });
+    // an creator facet, which we will use to remove our tips at the end.
+    const { creatorInvitation, publicFacet } = await E(zoe).makeInstance(
+      installation,
+      {
+        Tip: bucksIssuer,
+      },
+    );
 
-    // Check that we received an invite as the result of making the
+    // Check that we received an invitation as the result of making the
     // contract instance.
     t.ok(
-      await E(inviteIssuer).isLive(adminInvite),
-      `an valid invite (an ERTP payment) was created`,
+      await E(invitationIssuer).isLive(creatorInvitation),
+      `an valid invitation (an ERTP payment) was created`,
     );
 
-    // Let's use the adminInvite to make an offer. This will allow us
+    // Let's use the creatorInvitation to make an offer. This will allow us
     // to remove our tips at the end
-    const {
-      payout: adminPayoutP,
-      outcome: adminOutcomeP,
-      completeObj: { complete: completeAdmin },
-    } = await E(zoe).offer(adminInvite);
+    const creatorSeat = await E(zoe).offer(creatorInvitation);
 
     t.equals(
-      await adminOutcomeP,
-      `admin invite redeemed`,
-      `admin outcome is correct`,
+      await E(creatorSeat).getOfferResult(),
+      `creator invitation redeemed`,
+      `creator outcome is correct`,
     );
 
-    // Let's test some of the publicAPI methods. The publicAPI is
+    // Let's test some of the publicFacet methods. The publicFacet is
     // accessible to anyone who has access to Zoe and the
-    // instanceHandle. The publicAPI methods are up to the contract,
+    // instance. The publicFacet methods are up to the contract,
     // and Zoe doesn't require contracts to have
-    // publicAPI methods. In this case, the contract provides a
+    // publicFacet methods. In this case, the contract provides a
     // getNotifier() function that returns a notifier we can subscribe
     // to, in order to get updates about changes to the state of the
     // contract.
-    const notifier = E(publicAPI).getNotifier();
+    const notifier = E(publicFacet).getNotifier();
     const { value, updateCount } = await E(notifier).getUpdateSince();
     const nextUpdateP = E(notifier).getUpdateSince(updateCount);
 
@@ -119,12 +121,12 @@ test('contract with valid offers', async t => {
     );
 
     // Let's use the contract like a client and get some encouragement!
-    const encouragementInvite = await E(publicAPI).makeInvite();
+    const encouragementInvitation = await E(publicFacet).makeInvitation();
 
-    const { outcome: encouragementP } = await E(zoe).offer(encouragementInvite);
+    const seat1 = await E(zoe).offer(encouragementInvitation);
 
     t.equals(
-      await encouragementP,
+      await E(seat1).getOfferResult(),
       `You're doing great!`,
       `encouragement matches expected`,
     );
@@ -134,19 +136,19 @@ test('contract with valid offers', async t => {
       t.equals(result.value.count, 1, 'count increments by 1');
 
       // Now, let's get a premium encouragement message
-      const encouragementInvite2 = await E(publicAPI).makeInvite();
+      const encouragementInvitation2 = await E(publicFacet).makeInvitation();
       const proposal = harden({ give: { Tip: bucks5 } });
       const paymentKeywordRecord = harden({
         Tip: bucksPayment,
       });
-      const { outcome: secondEncouragementP } = await E(zoe).offer(
-        encouragementInvite2,
+      const seat2 = await E(zoe).offer(
+        encouragementInvitation2,
         proposal,
         paymentKeywordRecord,
       );
 
       t.equals(
-        await secondEncouragementP,
+        await E(seat2).getOfferResult(),
         `Wow, just wow. I have never seen such talent!`,
         `premium message is as expected`,
       );
@@ -155,12 +157,14 @@ test('contract with valid offers', async t => {
       t.deepEquals(newResult.value.count, 2, `count is now 2`);
 
       // Let's get our Tips
-      completeAdmin();
-      Promise.resolve(E.G(adminPayoutP).Tip).then(tip => {
-        bucksIssuer.getAmountOf(tip).then(tipAmount => {
-          t.deepEquals(tipAmount, bucks5, `payout is 5 bucks, all the tips`);
+      await E(creatorSeat).exit();
+      E(creatorSeat)
+        .getPayout('Tip')
+        .then(tip => {
+          bucksIssuer.getAmountOf(tip).then(tipAmount => {
+            t.deepEquals(tipAmount, bucks5, `payout is 5 bucks, all the tips`);
+          });
         });
-      });
     });
   } catch (e) {
     t.isNot(e, e, 'unexpected exception');
