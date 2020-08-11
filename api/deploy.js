@@ -122,10 +122,9 @@ export default async function deployApi(
 
   console.log('Installing contract');
   const issuerKeywordRecord = harden({ Tip: tipIssuer });
-  const { creatorInvitation: adminInvitation, instance } = await E(
+  const { creatorInvitation: adminInvitation, instance, publicFacet } = await E(
     zoe,
   ).makeInstance(encouragementInstallation, issuerKeywordRecord);
-  const publicAPI = E(zoe).getPublicFacet(instance);
 
   console.log('- SUCCESS! contract instance is running on Zoe');
 
@@ -152,7 +151,7 @@ export default async function deployApi(
   const invitationIssuerP = E(zoe).getInvitationIssuer();
   const invitationBrandP = E(invitationIssuerP).getBrand();
 
-  const assuranceIssuerP = E(publicAPI).getAssuranceIssuer();
+  const assuranceIssuerP = E(publicFacet).getAssuranceIssuer();
   const asurranceBrandP = E(assuranceIssuerP).getBrand();
   const tipBrandP = E(tipIssuer).getBrand();
 
@@ -197,7 +196,7 @@ export default async function deployApi(
 
   // Spawn the running code
   const handler = E(handlerInstall).spawn({
-    publicAPI,
+    publicFacet,
     http,
     board,
     invitationIssuer,
