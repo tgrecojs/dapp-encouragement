@@ -2,10 +2,11 @@
 // Agoric Dapp api deployment script
 
 import fs from 'fs';
-import installationConstants from '../ui/public/conf/installationConstants.js';
 import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
 import '@agoric/zoe/exported';
+
+import installationConstants from '../ui/public/conf/installationConstants';
 
 // deploy.js runs in an ephemeral Node.js outside of swingset. The
 // spawner runs within ag-solo, so is persistent.  Once the deploy.js
@@ -18,7 +19,7 @@ const TIP_ISSUER_PETNAME = process.env.TIP_ISSUER_PETNAME || 'moola';
  * @typedef {Object} DeployPowers The special powers that `agoric deploy` gives us
  * @property {(path: string) => { moduleFormat: string, source: string }} bundleSource
  * @property {(path: string) => string} pathResolve
- * 
+ *
  * @typedef {Object} Board
  * @property {(id: string) => any} getValue
  * @property {(value: any) => string} getId
@@ -28,18 +29,19 @@ const TIP_ISSUER_PETNAME = process.env.TIP_ISSUER_PETNAME || 'moola';
 
 /**
  * @typedef {{ zoe: ZoeService, board: Board, spawner, wallet, uploads, http }} Home
- * @param {Promise<Home>} homePromise 
+ * @param {Promise<Home>} homePromise
  * A promise for the references available from REPL home
  * @param {DeployPowers} powers
  */
-export default async function deployApi(homePromise, { bundleSource, pathResolve }) {
-
+export default async function deployApi(
+  homePromise,
+  { bundleSource, pathResolve },
+) {
   // Let's wait for the promise to resolve.
   const home = await homePromise;
 
   // Unpack the references.
   const {
-
     // *** LOCAL REFERENCES ***
 
     // This wallet only exists on this machine, and only you have
@@ -72,17 +74,15 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
     // have a one-to-one bidirectional mapping. If a value is added a
     // second time, the original id is just returned.
     board,
-
   } = home;
 
   // To get the backend of our dapp up and running, first we need to
   // grab the installationHandle that our contract deploy script put
   // in the public board.
-  const {
+  const { INSTALLATION_HANDLE_BOARD_ID, CONTRACT_NAME } = installationConstants;
+  const encouragementInstallation = await E(board).getValue(
     INSTALLATION_HANDLE_BOARD_ID,
-    CONTRACT_NAME,
-  } = installationConstants;
-  const encouragementInstallation = await E(board).getValue(INSTALLATION_HANDLE_BOARD_ID);
+  );
 
   // Second, we can use the installationHandle to create a new
   // instance of our contract code on Zoe. A contract instance is a running
@@ -111,17 +111,20 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   const tipIssuer = issuers.get(TIP_ISSUER_PETNAME);
 
   if (tipIssuer === undefined) {
-    console.error('Cannot find TIP_ISSUER_PETNAME', TIP_ISSUER_PETNAME, 'in home.wallet');
+    console.error(
+      'Cannot find TIP_ISSUER_PETNAME',
+      TIP_ISSUER_PETNAME,
+      'in home.wallet',
+    );
     console.error('Have issuers:', [...issuers.keys()].join(', '));
     process.exit(1);
   }
 
   console.log('Installing contract');
   const issuerKeywordRecord = harden({ Tip: tipIssuer });
-  const {
-    creatorInvitation: adminInvitation,
-    instance,
-  } = await E(zoe).makeInstance(encouragementInstallation, issuerKeywordRecord);
+  const { creatorInvitation: adminInvitation, instance } = await E(
+    zoe,
+  ).makeInstance(encouragementInstallation, issuerKeywordRecord);
   const publicAPI = E(zoe).getPublicFacet(instance);
 
   console.log('- SUCCESS! contract instance is running on Zoe');
@@ -138,7 +141,7 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   // When the promise for a payout resolves, we want to deposit the
   // payments in our purses. We will put the adminPayoutP and
   // completeObj in our scratch location so that we can share the
-  // live objects with the shutdown.js script. 
+  // live objects with the shutdown.js script.
   E(scratch).set('adminPayoutP', E(adminSeat).getPayouts());
   E(scratch).set('adminSeat', adminSeat);
 
@@ -162,16 +165,17 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   const assuranceIssuer = await assuranceIssuerP;
   const assuranceBrand = await asurranceBrandP;
 
-  const [TIP_BRAND_BOARD_ID,
+  const [
+    TIP_BRAND_BOARD_ID,
     INSTANCE_HANDLE_BOARD_ID,
     ASSURANCE_BRAND_BOARD_ID,
-    ASSURANCE_ISSUER_BOARD_ID]
-    = await Promise.all([
-      E(board).getId(tipBrand),
-      E(board).getId(instance),
-      E(board).getId(assuranceBrand),
-      E(board).getId(assuranceIssuer),
-    ]);
+    ASSURANCE_ISSUER_BOARD_ID,
+  ] = await Promise.all([
+    E(board).getId(tipBrand),
+    E(board).getId(instance),
+    E(board).getId(assuranceBrand),
+    E(board).getId(assuranceIssuer),
+  ]);
 
   console.log(`-- Contract Name: ${CONTRACT_NAME}`);
   console.log(`-- INSTANCE_HANDLE_BOARD_ID: ${INSTANCE_HANDLE_BOARD_ID}`);
@@ -192,7 +196,12 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
   const handlerInstall = E(spawner).install(bundle);
 
   // Spawn the running code
-  const handler = E(handlerInstall).spawn({ publicAPI, http, board, invitationIssuer });
+  const handler = E(handlerInstall).spawn({
+    publicAPI,
+    http,
+    board,
+    invitationIssuer,
+  });
   await E(http).registerAPIHandler(handler);
 
   const invitationBrand = await invitationBrandP;
@@ -204,7 +213,10 @@ export default async function deployApi(homePromise, { bundleSource, pathResolve
     INSTALLATION_HANDLE_BOARD_ID,
     INVITE_BRAND_BOARD_ID,
     // BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
-    brandBoardIds: { Tip: TIP_BRAND_BOARD_ID, Assurance: ASSURANCE_BRAND_BOARD_ID },
+    brandBoardIds: {
+      Tip: TIP_BRAND_BOARD_ID,
+      Assurance: ASSURANCE_BRAND_BOARD_ID,
+    },
     issuerBoardIds: { Assurance: ASSURANCE_ISSUER_BOARD_ID },
     BRIDGE_URL: 'http://127.0.0.1:8000',
     API_URL: 'http://127.0.0.1:8000',
