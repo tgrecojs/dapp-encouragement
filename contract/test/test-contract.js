@@ -1,6 +1,6 @@
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from 'tape-promise/tape';
+import test from 'tape-promise/tape';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
@@ -73,7 +73,7 @@ test('contract with valid offers', async t => {
 
     // Create the contract instance, using our new issuer. It returns
     // an creator facet, which we will use to remove our tips at the end.
-    const { creatorInvitation, publicFacet } = await E(zoe).makeInstance(
+    const { creatorInvitation, publicFacet } = await E(zoe).startInstance(
       installation,
       {
         Tip: bucksIssuer,
