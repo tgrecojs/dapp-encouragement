@@ -23,8 +23,8 @@ const start = async (zcf, _terms) => {
   const { amountMath: assuranceMath, issuer } = assuranceMint.getIssuerRecord();
 
   const {
-    brandKeywordRecord: { Tip: tipBrand },
-  } = zcf.getInstanceRecord();
+    brands: { Tip: tipBrand },
+  } = zcf.getTerms();
   const tipAmountMath = zcf.getAmountMath(tipBrand);
 
   /** @type {ZCFSeat} */

@@ -8,7 +8,7 @@ import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
 import { evalContractBundle } from '@agoric/zoe/src/contractFacet/evalContractCode';
 import { makeZoe } from '@agoric/zoe';
-import makeIssuerKit from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makePromiseKit } from '@agoric/promise-kit';
 
