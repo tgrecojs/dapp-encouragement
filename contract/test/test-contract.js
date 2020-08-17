@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import '@agoric/install-ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'tape-promise/tape';
@@ -158,7 +160,7 @@ test('contract with valid offers', async t => {
       t.deepEquals(newResult.value.count, 2, `count is now 2`);
 
       // Let's get our Tips
-      await E(creatorSeat).exit();
+      await E(creatorSeat).tryExit();
       E(creatorSeat)
         .getPayout('Tip')
         .then(tip => {
