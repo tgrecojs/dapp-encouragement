@@ -31,7 +31,7 @@ export default async function main() {
     flipSelectedBrands(selects);
   });
 
-  let zoeInviteDepositFacetId;
+  let zoeInvitationDepositFacetId;
   
   /**
    * @param {{ type: string; data: any; walletURL: string }} obj
@@ -50,7 +50,7 @@ export default async function main() {
        break;
       }
       case 'walletDepositFacetIdResponse': {
-        zoeInviteDepositFacetId = obj.data;
+        zoeInvitationDepositFacetId = obj.data;
       }
     }
   };
@@ -71,9 +71,9 @@ export default async function main() {
         $numEncouragements.innerHTML = obj.data.count;
         break;
       }
-      case 'encouragement/sendInviteResponse': {
-        // Once the invite has been sent to the user, we update the
-        // offer to include the inviteHandleBoardId. Then we make a
+      case 'encouragement/sendInvitationResponse': {
+        // Once the invitation has been sent to the user, we update the
+        // offer to include the invitationHandleBoardId. Then we make a
         // request to the user's wallet to send the proposed offer for
         // acceptance/rejection.
         const { offer } = obj.data;
@@ -146,7 +146,7 @@ export default async function main() {
           // JSONable ID for this offer.  This is scoped to the origin.
           id: now,
 
-          // TODO: get this from the invite instead in the wallet. We
+          // TODO: get this from the invitation instead in the wallet. We
           // don't want to trust the dapp on this.
           instanceHandleBoardId: INSTANCE_HANDLE_BOARD_ID,
           installationHandleBoardId: INSTALLATION_HANDLE_BOARD_ID,
@@ -164,9 +164,9 @@ export default async function main() {
           },
         };
         apiSend({
-          type: 'encouragement/sendInvite',
+          type: 'encouragement/sendInvitation',
           data: {
-            depositFacetId: zoeInviteDepositFacetId,
+            depositFacetId: zoeInvitationDepositFacetId,
             offer,
           },
         });

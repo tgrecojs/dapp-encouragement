@@ -4,17 +4,16 @@
  * @property {(path: string) => string} pathResolve
  */
 
-import { E } from "@agoric/eventual-send";
+import { E } from '@agoric/eventual-send';
 
 /**
  * @param {any} referencesPromise A promise for the references
  * available from REPL home
  * @param {DeployPowers} powers
  */
-export default async function deployShutdown(referencesPromise, { bundleSource, pathResolve }) {
-  
+export default async function deployShutdown(referencesPromise) {
   // TODO: ensure this works
-  
+
   const { uploads: scratch, wallet } = await referencesPromise;
   const adminPayoutP = E(scratch).get('adminPayoutP');
   const completeObj = E(scratch).get('completeObj');
