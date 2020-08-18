@@ -124,7 +124,7 @@ export default async function deployApi(
   const issuerKeywordRecord = harden({ Tip: tipIssuer });
   const { creatorInvitation: adminInvitation, instance, publicFacet } = await E(
     zoe,
-  ).makeInstance(encouragementInstallation, issuerKeywordRecord);
+  ).startInstance(encouragementInstallation, issuerKeywordRecord);
 
   console.log('- SUCCESS! contract instance is running on Zoe');
 
