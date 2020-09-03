@@ -51,7 +51,7 @@ const start = async (zcf, _terms) => {
     // their seat and retrieved their tips), we just don't give any
     // encouragement.
     if (creatorSeat.hasExited()) {
-      seat.kickOut(`We are no longer giving encouragement`);
+      throw seat.kickOut(new Error(`We are no longer giving encouragement`));
     }
 
     let encouragement = messages.basic;
