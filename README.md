@@ -15,6 +15,9 @@ blockchain. It does not currently deploy or connect to the Agoric testnet.
 This particular dapp UI is written in vanilla JS for simplicity (as
 opposed to using a framework).
 
+The dapp API is written with Express, to illustrate how you
+can use ordinary Node.js modules with an ocap interface to the chain.
+
 ## Functionality
 
 The Encouragement Dapp:
