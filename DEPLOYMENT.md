@@ -1,6 +1,6 @@
 # Deployment steps
 
-1. Spin up a Linux server on your favourite cloud provider.
+1. Set up a Linux server as described in the [Validator Guide](https://github.com/Agoric/agoric-sdk/wiki/Validator-Guide).  This won't be an actual validator, but it has many of the same system dependencies.
 2. Install the ag-solo: `agoric install`
 3. Start the ag-solo via systemd, `/etc/systemd/system/agoric-dapp-api.service`:
 ```
