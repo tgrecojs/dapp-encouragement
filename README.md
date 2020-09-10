@@ -1,5 +1,16 @@
 # Encouragement Dapp
 
+TL;DR:
+```sh
+# Start the Agoric platform
+agoric install && agoric start --reset
+# In another terminal, deploy this contract
+agoric deploy contract/deploy.js
+# Start the API server
+API_HOST=127.0.0.1 API_PORT=5003 agoric deploy --enable-unsafe-plugins api/deploy.js
+```
+Then navigate to http://localhost:5003.
+
 The Encouragement Dapp is the simplest [Agoric
 Dapp](https://agoric.com/documentation/dapps/). It
 demonstrates the three important parts of
@@ -40,6 +51,8 @@ Here's the interface:
 and after we click the "Encourage Me!" button:
 
 ![Screenshot After Encouragement](readme-assets/after.png)
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for how to deploy this Dapp on a public website, such as https://encouragement.testnet.agoric.com/
 
 ## TODO
 

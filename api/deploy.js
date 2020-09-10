@@ -15,6 +15,7 @@ import installationConstants from '../ui/public/conf/installationConstants';
 // The deployer's wallet's petname for the tip issuer.
 const TIP_ISSUER_PETNAME = process.env.TIP_ISSUER_PETNAME || 'moola';
 
+const API_HOST = process.env.API_HOST || '127.0.0.1';
 const API_PORT = process.env.API_PORT || '5000';
 
 /**
@@ -187,6 +188,7 @@ export default async function deployApi(
   const apiP = installUnsafePlugin('./src/server.js');
   await E(apiP).start({
     port: API_PORT,
+    host: API_HOST,
     CONTRACT_NAME,
     publicFacet,
     board,
