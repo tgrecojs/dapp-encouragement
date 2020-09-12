@@ -126,8 +126,33 @@ export const bootPlugin = ({ getState, setState }) => {
         });
       });
 
+      const wsActions = {
+        noop() {
+          // do nothing.
+        },
+        heartbeat() {
+          this.isAlive = true;
+        },
+      };
+
+      const pingInterval = setInterval(function ping() {
+        wss.clients.forEach(ws => {
+          if (!ws.isAlive) {
+            ws.terminate();
+            return;
+          }
+          ws.isAlive = false;
+          ws.ping(wsActions.noop);
+        });
+      }, 30000);
+
+      wss.on('close', () => clearInterval(pingInterval));
+
       // Handle inbound WebSocket connections.
       wss.on('connection', ws => {
+        ws.isAlive = true;
+        ws.on('pong', wsActions.heartbeat);
+
         const send = obj => ws.send(JSON.stringify(obj));
         ws.on('close', () => {
           subscribedWS.delete(ws);

@@ -1,4 +1,5 @@
 // @ts-check
+import 'regenerator-runtime/runtime';
 import dappConstants from '../lib/constants.js';
 import { connect } from './connect.js';
 import { walletUpdatePurses, flipSelectedBrands } from './wallet.js';

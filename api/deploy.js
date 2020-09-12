@@ -22,7 +22,7 @@ const API_PORT = process.env.API_PORT || '5000';
  * @typedef {Object} DeployPowers The special powers that `agoric deploy` gives us
  * @property {(path: string) => { moduleFormat: string, source: string }} bundleSource
  * @property {(path: string) => string} pathResolve
- * @property {(path: string) => Promise<any>} installUnsafePlugin
+ * @property {(path: string, opts?: any) => Promise<any>} installUnsafePlugin
  *
  * @typedef {Object} Board
  * @property {(id: string) => any} getValue
@@ -185,8 +185,7 @@ export default async function deployApi(
   // within this script are severed when the script is done running.)
   // To run the api persistently, we install an "unsafe plugin".
 
-  const apiP = installUnsafePlugin('./src/server.js');
-  await E(apiP).start({
+  await installUnsafePlugin('./src/server.js', {
     port: API_PORT,
     host: API_HOST,
     CONTRACT_NAME,
