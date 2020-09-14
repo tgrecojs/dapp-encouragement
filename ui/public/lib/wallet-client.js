@@ -26,12 +26,7 @@ let initializedIframe = false;
 function createSocket({ onConnect, onDisconnect, onMessage }, endpoint = '/private/wallet-bridge') {
   let ifr = /** @type {HTMLIFrameElement} */ (document.getElementById(walletBridgeId));
   if (!ifr) {
-    ifr = document.createElement('iframe');
-    ifr.id = walletBridgeId;
-    ifr.setAttribute('width', '0');
-    ifr.setAttribute('height', '0');
-    ifr.setAttribute('style', 'display: none');
-    document.body.appendChild(ifr);
+    ifr = document.querySelector(`#${wallletBridgeId}`);
   }
   if (!initializedIframe) {
     initializedIframe = true;
