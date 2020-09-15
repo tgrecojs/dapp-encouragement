@@ -44,11 +44,6 @@ export default async function main() {
         $inputAmount.removeAttribute('disabled');
         break;
       }
-      case 'walletURL': {
-       // Change the form action to URL.
-       $encourageForm.action = `${obj.walletURL}`;
-       break;
-      }
       case 'walletDepositFacetIdResponse': {
         zoeInvitationDepositFacetId = obj.data;
       }
@@ -120,14 +115,11 @@ export default async function main() {
     $encourageMe.removeAttribute('disabled');
     $encourageMe.addEventListener('click', () => {
       if ($forFree.checked) {
-        $encourageForm.target = '';
         apiSend({
           type: 'encouragement/getEncouragement',
         });
       }
       if ($forTip.checked) {
-        $encourageForm.target = 'wallet';
-
         let optWant = {};
         const intoPurse = selects.$intoPurse.value;
         if (intoPurse && intoPurse !== 'remove()') {

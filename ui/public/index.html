@@ -26,7 +26,7 @@
       giving a tip, or on the x in a red circle to disapprove.</p>
     </div>
 
-    <form id="encourageForm" target="" onsubmit="return !!this.target">
+    <form id="encourageForm" onsubmit="return false">
     <p>
         Request encouragement...
         <br/>
@@ -48,6 +48,7 @@
       </p>
 
       <input type="submit" value="Encourage Me!" id="encourageMe" disabled="disabled" />
+      <span><iframe id="walletBridgeIFrame" width="100" height="21"></iframe></span>
 
       <p><i>I've encouraged <span id="numEncouragements">0</span> times since I was born.</i></p>
     </form>
