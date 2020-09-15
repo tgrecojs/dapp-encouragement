@@ -26,7 +26,7 @@ let initializedIframe = false;
 function createSocket({ onConnect, onDisconnect, onMessage }, endpoint = '/private/wallet-bridge') {
   let ifr = /** @type {HTMLIFrameElement} */ (document.getElementById(walletBridgeId));
   if (!ifr) {
-    ifr = document.querySelector(`#${wallletBridgeId}`);
+    ifr = document.querySelector(`#${walletBridgeId}`);
   }
   if (!initializedIframe) {
     initializedIframe = true;
