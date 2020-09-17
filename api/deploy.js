@@ -197,6 +197,8 @@ export default async function deployApi(
   const invitationBrand = await invitationBrandP;
   const INVITE_BRAND_BOARD_ID = await E(board).getId(invitationBrand);
 
+  const API_URL = process.env.API_URL || `http://127.0.0.1:${API_PORT}`;
+
   // Re-save the constants somewhere where the UI and api can find it.
   const dappConstants = {
     INSTANCE_HANDLE_BOARD_ID,
@@ -209,7 +211,7 @@ export default async function deployApi(
     },
     issuerBoardIds: { Assurance: ASSURANCE_ISSUER_BOARD_ID },
     BRIDGE_URL: 'http://127.0.0.1:8000',
-    API_URL: `http://127.0.0.1:${API_PORT}`,
+    API_URL,
   };
   const defaultsFile = pathResolve(`../ui/public/conf/defaults.js`);
   console.log('writing', defaultsFile);

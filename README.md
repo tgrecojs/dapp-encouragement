@@ -52,7 +52,7 @@ and after we click the "Encourage Me!" button:
 
 ![Screenshot After Encouragement](readme-assets/after.png)
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for how to deploy this Dapp on a public website, such as https://encouragement.testnet.agoric.com/
+See the [Dapp Deployment Guide](https://github.com/Agoric/agoric-sdk/wiki/Dapp-Deployment-Guide) for how to deploy this Dapp on a public website, such as https://encouragement.testnet.agoric.com/
 
 ## TODO
 
