@@ -7,7 +7,7 @@ agoric install && agoric start --reset
 # In another terminal, deploy this contract
 agoric deploy contract/deploy.js
 # Start the API server
-API_HOST=127.0.0.1 API_PORT=5003 agoric deploy --enable-unsafe-plugins api/deploy.js
+agoric deploy api/deploy.js
 ```
 Then navigate to http://localhost:5003.
 

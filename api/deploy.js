@@ -15,9 +15,6 @@ import installationConstants from '../ui/public/conf/installationConstants';
 // The deployer's wallet's petname for the tip issuer.
 const TIP_ISSUER_PETNAME = process.env.TIP_ISSUER_PETNAME || 'moola';
 
-const API_HOST = process.env.API_HOST || '127.0.0.1';
-const API_PORT = process.env.API_PORT || '5000';
-
 /**
  * @typedef {Object} DeployPowers The special powers that `agoric deploy` gives us
  * @property {(path: string) => { moduleFormat: string, source: string }} bundleSource
@@ -31,6 +28,9 @@ const API_PORT = process.env.API_PORT || '5000';
  * @property {() => [string]} ids
  */
 
+const API_HOST = process.env.API_HOST || '127.0.0.1';
+const API_PORT = process.env.API_PORT || '8000';
+
 /**
  * @typedef {{ zoe: ZoeService, board: Board, spawner, wallet, uploads, http }} Home
  * @param {Promise<Home>} homePromise
@@ -39,7 +39,7 @@ const API_PORT = process.env.API_PORT || '5000';
  */
 export default async function deployApi(
   homePromise,
-  { pathResolve, installUnsafePlugin },
+  { bundleSource, pathResolve, installUnsafePlugin },
 ) {
   // Let's wait for the promise to resolve.
   const home = await homePromise;
@@ -57,12 +57,19 @@ export default async function deployApi(
     // machine.
     uploads: scratch,
 
+    // The spawner persistently runs scripts within ag-solo, off-chain.
+    spawner,
+
     // *** ON-CHAIN REFERENCES ***
 
     // Zoe lives on-chain and is shared by everyone who has access to
     // the chain. In this demo, that's just you, but on our testnet,
     // everyone has access to the same Zoe.
     zoe,
+
+    // The http request handler.
+    // TODO: add more explanation
+    http,
 
     // The board is an on-chain object that is used to make private
     // on-chain objects public to everyone else on-chain. These
@@ -179,25 +186,57 @@ export default async function deployApi(
   console.log(`-- ASSURANCE_BRAND_BOARD_ID: ${ASSURANCE_BRAND_BOARD_ID}`);
   console.log(`-- TIP_BRAND_BOARD_ID: ${TIP_BRAND_BOARD_ID}`);
 
-  // We want the api server to run persistently as part of the
-  // ag-solo. (Scripts such as this
+  // We want the handler to run persistently. (Scripts such as this
   // deploy.js script are ephemeral and all connections to objects
   // within this script are severed when the script is done running.)
-  // To run the api persistently, we install an "unsafe plugin".
 
-  await installUnsafePlugin('./src/server.js', {
-    port: API_PORT,
-    host: API_HOST,
-    CONTRACT_NAME,
-    publicFacet,
-    board,
-    invitationIssuer,
-  });
+  const installLegacyHandler = async () => {
+    // To run the handler persistently, we must use the spawner to run
+    // the code on this machine even when the script is done running.
+
+    // Bundle up the handler code
+    const bundle = await bundleSource(pathResolve('./src/handler.js'));
+
+    // Install it on the spawner
+    const handlerInstall = E(spawner).install(bundle);
+
+    // Spawn the running code
+    const handler = E(handlerInstall).spawn({
+      publicFacet,
+      http,
+      board,
+      invitationIssuer,
+    });
+    await E(http).registerAPIHandler(handler);
+  };
+
+  const installPluginServer = async () => {
+    // To run the API persistently, we ask the agoric deploy command to install an
+    // HTTP server plugin into the running ag-solo, and give it access to the
+    // publicFacet and other capabilities.
+    //
+    // The function is named installUnsafePlugin because, unlike any vat or
+    // contract, the plugin will get full access to the OS-level account in which
+    // the ag-solo is running.
+
+    await installUnsafePlugin('./src/server.js', {
+      port: API_PORT,
+      host: API_HOST,
+      CONTRACT_NAME,
+      publicFacet,
+      board,
+      invitationIssuer,
+    });
+  };
+
+  const installer =
+    API_PORT === '8000' ? installLegacyHandler : installPluginServer;
+  await installer();
 
   const invitationBrand = await invitationBrandP;
   const INVITE_BRAND_BOARD_ID = await E(board).getId(invitationBrand);
 
-  const API_URL = process.env.API_URL || `http://127.0.0.1:${API_PORT}`;
+  const API_URL = process.env.API_URL || `http://127.0.0.1:${API_PORT || 8000}`;
 
   // Re-save the constants somewhere where the UI and api can find it.
   const dappConstants = {
