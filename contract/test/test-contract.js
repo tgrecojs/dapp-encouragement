@@ -1,17 +1,17 @@
-// @ts-nocheck
+// @ts-check
 
 import '@agoric/install-ses';
+
+// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-// xxeslint-disable-next-line import/no-extraneous-dependencies
+// eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import { evalContractBundle } from '@agoric/zoe/src/contractFacet/evalContractCode';
+import harden from '@agoric/harden';
 import { makeFakeVatAdmin } from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import { makeZoe } from '@agoric/zoe';
 import { makeIssuerKit } from '@agoric/ertp';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { makePromiseKit } from '@agoric/promise-kit';
 
 const contractPath = `${__dirname}/../src/contract`;
 
