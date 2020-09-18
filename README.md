@@ -1,5 +1,16 @@
 # Encouragement Dapp
 
+TL;DR:
+```sh
+# Start the Agoric platform
+agoric install && agoric start --reset
+# In another terminal, deploy this contract
+agoric deploy contract/deploy.js
+# Start the API server
+agoric deploy api/deploy.js
+```
+Then navigate to http://localhost:5003.
+
 The Encouragement Dapp is the simplest [Agoric
 Dapp](https://agoric.com/documentation/dapps/). It
 demonstrates the three important parts of
@@ -14,6 +25,9 @@ blockchain. It does not currently deploy or connect to the Agoric testnet.
 
 This particular dapp UI is written in vanilla JS for simplicity (as
 opposed to using a framework).
+
+The dapp API is written with Express, to illustrate how you
+can use ordinary Node.js modules with an ocap interface to the chain.
 
 ## Functionality
 
@@ -37,6 +51,8 @@ Here's the interface:
 and after we click the "Encourage Me!" button:
 
 ![Screenshot After Encouragement](readme-assets/after.png)
+
+See the [Dapp Deployment Guide](https://github.com/Agoric/agoric-sdk/wiki/Dapp-Deployment-Guide) for how to deploy this Dapp on a public website, such as https://encouragement.testnet.agoric.com/
 
 ## TODO
 
