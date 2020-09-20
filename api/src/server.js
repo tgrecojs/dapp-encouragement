@@ -163,7 +163,7 @@ export const bootPlugin = ({ getState, setState }) => {
             case 'encouragement/getEncouragement': {
               send({
                 type: 'encouragement/getEncouragementResponse',
-                data: await E(publicFacet).getFreeEncouragement(),
+                data: await E(publicFacet).getFreeEncouragement(obj.nickname),
               });
               break;
             }
@@ -178,9 +178,9 @@ export const bootPlugin = ({ getState, setState }) => {
             }
 
             case 'encouragement/sendInvitation': {
-              const { depositFacetId, offer } = obj.data;
+              const { depositFacetId, offer, nickname } = obj.data;
               const depositFacet = E(board).getValue(depositFacetId);
-              const invitation = await E(publicFacet).makeInvitation();
+              const invitation = await E(publicFacet).makeInvitation(nickname);
               const invitationAmount = await E(invitationIssuer).getAmountOf(
                 invitation,
               );

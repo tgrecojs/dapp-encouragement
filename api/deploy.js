@@ -17,7 +17,7 @@ const TIP_ISSUER_PETNAME = process.env.TIP_ISSUER_PETNAME || 'moola';
 
 /**
  * @typedef {Object} DeployPowers The special powers that `agoric deploy` gives us
- * @property {(path: string) => { moduleFormat: string, source: string }} bundleSource
+ * @property {(path: string) => Promise<{ moduleFormat: string, source: string }>} bundleSource
  * @property {(path: string) => string} pathResolve
  * @property {(path: string, opts?: any) => Promise<any>} installUnsafePlugin
  *
@@ -190,8 +190,8 @@ export default async function deployApi(
   // deploy.js script are ephemeral and all connections to objects
   // within this script are severed when the script is done running.)
 
-  const installLegacyHandler = async () => {
-    // To run the handler persistently, we must use the spawner to run
+  const installHandler = async () => {
+    // To run the open handler persistently, we must use the spawner to run
     // the code on this machine even when the script is done running.
 
     // Bundle up the handler code
@@ -203,8 +203,8 @@ export default async function deployApi(
     // Spawn the running code
     const handler = E(handlerInstall).spawn({
       publicFacet,
-      http,
       board,
+      http,
       invitationIssuer,
     });
     await E(http).registerAPIHandler(handler);
@@ -229,8 +229,7 @@ export default async function deployApi(
     });
   };
 
-  const installer =
-    API_PORT === '8000' ? installLegacyHandler : installPluginServer;
+  const installer = API_PORT === '8000' ? installHandler : installPluginServer;
   await installer();
 
   const invitationBrand = await invitationBrandP;
