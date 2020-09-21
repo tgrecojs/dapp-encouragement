@@ -2,13 +2,10 @@
 
 import '@agoric/install-ses';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import bundleSource from '@agoric/bundle-source';
 
 import { E } from '@agoric/eventual-send';
-import harden from '@agoric/harden';
 import { makeFakeVatAdmin } from '@agoric/zoe/test/unitTests/contracts/fakeVatAdmin';
 import { makeZoe } from '@agoric/zoe';
 import { makeIssuerKit } from '@agoric/ertp';
