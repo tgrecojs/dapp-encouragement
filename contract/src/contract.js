@@ -1,15 +1,14 @@
 // @ts-check
 import '@agoric/zoe/exported';
-import harden from '@agoric/harden';
 import { makeNotifierKit } from '@agoric/notifier';
 
 /**
  * This contract provides encouragement. For a small donation it provides more.
  *
- * @param {ContractFacet} zcf
+ * @type {ContractStartFn}
  *
  */
-const start = async (zcf, _terms) => {
+const start = async zcf => {
   let count = 0;
   const messages = {
     basic: `You're doing great!`,
@@ -35,17 +34,13 @@ const start = async (zcf, _terms) => {
   };
   updateNotification();
 
-  /**
-   * @param {ZCFSeat} seat
-   */
+  /** @type {OfferHandler} */
   const create = seat => {
     creatorSeat = seat;
     return `creator invitation redeemed`;
   };
 
-  /**
-   * @param {ZCFSeat} seat
-   */
+  /** @type {OfferHandler} */
   const encourage = seat => {
     // if the creatorSeat is no longer active (i.e. the creator exited
     // their seat and retrieved their tips), we just don't give any

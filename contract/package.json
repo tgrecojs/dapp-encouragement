@@ -84,8 +84,10 @@
       "no-unused-expressions": "off",
       "no-loop-func": "off",
       "no-inner-declarations": "off",
-      "import/prefer-default-export": "off"
-    }
+      "import/prefer-default-export": "off",
+      "import/no-extraneous-dependencies": "off"
+    },
+    "globals": { "harden": "readonly" }
   },
   "prettier": {
     "trailingComma": "all",
