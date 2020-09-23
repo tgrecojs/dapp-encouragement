@@ -107,7 +107,7 @@ test('contract with valid offers', async t => {
 
   t.is(
     await E(seat1).getOfferResult(),
-    `You're doing great!`,
+    `Hey, friend!  You're doing great!`,
     `encouragement matches expected`,
   );
 
@@ -129,7 +129,7 @@ test('contract with valid offers', async t => {
 
   t.is(
     await E(seat2).getOfferResult(),
-    `Wow, just wow. I have never seen such talent!`,
+    `Hey, friend!  Wow, just wow. I have never seen such talent!`,
     `premium message is as expected`,
   );
 

@@ -25,7 +25,7 @@ const selects = {
 
 const $forFree = /** @type {HTMLInputElement} */ (document.getElementById('forFree'));
 const $forTip = /** @type {HTMLInputElement} */ (document.getElementById('forTip'));
-const $encourageForm = /** @type {HTMLFormElement} */ (document.getElementById('encourageForm'));
+const $nickname = /** @type {HTMLInputElement} */ (document.getElementById('nickname'));
 
 export default async function main() {
   selects.$brands.addEventListener('change', () => {
@@ -118,6 +118,7 @@ export default async function main() {
       if ($forFree.checked) {
         apiSend({
           type: 'encouragement/getEncouragement',
+          data: { nickname: $nickname.value },
         });
       }
       if ($forTip.checked) {
@@ -161,6 +162,7 @@ export default async function main() {
           data: {
             depositFacetId: zoeInvitationDepositFacetId,
             offer,
+            nickname: $nickname.value,
           },
         });
         // alert('Please approve your tip, then close the wallet.')
