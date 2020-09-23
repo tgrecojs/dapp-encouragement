@@ -163,7 +163,9 @@ export const bootPlugin = ({ getState, setState }) => {
             case 'encouragement/getEncouragement': {
               send({
                 type: 'encouragement/getEncouragementResponse',
-                data: await E(publicFacet).getFreeEncouragement(obj.nickname),
+                data: await E(publicFacet).getFreeEncouragement(
+                  obj.data.nickname,
+                ),
               });
               break;
             }

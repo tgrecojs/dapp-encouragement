@@ -2,9 +2,6 @@
 import '@agoric/zoe/exported';
 import { makeNotifierKit } from '@agoric/notifier';
 
-const personalize = (nickname = undefined, exclamation = 'Hey, ') =>
-  nickname ? `${exclamation}${nickname}!  ` : '';
-
 /**
  * This contract provides encouragement. For a small donation it provides more.
  *
@@ -45,17 +42,16 @@ const start = async zcf => {
 
   /** @type {(nickname?: string) => OfferHandler} */
   const makeEncourager = (nickname = undefined) => seat => {
+    if (!nickname) {
+      nickname = 'friend';
+    }
+
     // if the creatorSeat is no longer active (i.e. the creator exited
     // their seat and retrieved their tips), we just don't give any
     // encouragement.
     if (creatorSeat.hasExited()) {
       throw seat.kickOut(
-        new Error(
-          `${personalize(
-            nickname,
-            'Sorry, ',
-          )}We are no longer giving encouragement`,
-        ),
+        new Error(`Sorry, ${nickname}, we are no longer giving encouragement`),
       );
     }
 
@@ -87,7 +83,7 @@ const start = async zcf => {
     seat.exit();
     count += 1;
     updateNotification();
-    return `${personalize(nickname)}${encouragement}`;
+    return `Hey, ${nickname}!  ${encouragement}`;
   };
 
   const publicFacet = {
@@ -95,9 +91,12 @@ const start = async zcf => {
       return zcf.makeInvitation(makeEncourager(nickname), 'encouragement');
     },
     getFreeEncouragement(nickname = undefined) {
+      if (!nickname) {
+        nickname = 'friend';
+      }
       count += 1;
       updateNotification();
-      return `${personalize(nickname)}${messages.basic}`;
+      return `Hey, ${nickname}!  ${messages.basic}`;
     },
     getAssuranceIssuer() {
       return issuer;
