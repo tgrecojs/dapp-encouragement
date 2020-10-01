@@ -15,7 +15,7 @@ const contractPath = `${__dirname}/../src/contract`;
 test('contract with valid offers', async t => {
   // Outside of tests, we should use the long-lived Zoe on the
   // testnet. In this test, we must create a new Zoe.
-  const zoe = makeZoe(makeFakeVatAdmin());
+  const zoe = makeZoe(makeFakeVatAdmin().admin);
 
   // Get the Zoe invitation issuer from Zoe.
   const invitationIssuer = await E(zoe).getInvitationIssuer();
