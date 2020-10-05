@@ -23,10 +23,13 @@ export const bootPlugin = ({ getState, setState }) => {
         port = '5000',
         host = '127.0.0.1',
         publicFacet,
-        board,
-        invitationIssuer,
+        rendezvous,
       } = opts;
       const console = anylogger(`encouragement-api:${port}`);
+
+      const dappAddresses = await Promise.all([
+        E(rendezvous).getLocalAddress(),
+      ]);
 
       // Create a web server with web socket.
       const app = express();
@@ -157,61 +160,79 @@ export const bootPlugin = ({ getState, setState }) => {
         ws.on('close', () => {
           subscribedWS.delete(ws);
         });
-        ws.on('message', async data => {
-          const obj = JSON.parse(data);
-          switch (obj.type) {
-            case 'encouragement/getEncouragement': {
-              send({
-                type: 'encouragement/getEncouragementResponse',
-                data: await E(publicFacet).getFreeEncouragement(
-                  obj.data.nickname,
-                ),
-              });
-              break;
-            }
 
-            case 'encouragement/subscribeNotifications': {
-              subscribedWS.add(ws);
-              send({
-                type: 'encouragement/subscribeNotificationsResponse',
-                data: !notifierError,
-              });
-              break;
-            }
+        // Give them enough information to rendezvous immediately.
+        let addrWallets = {};
+        send({
+          type: 'encouragement/dappAddresses',
+          data: dappAddresses,
+        });
 
-            case 'encouragement/sendInvitation': {
-              const { depositFacetId, offer, nickname } = obj.data;
-              const depositFacet = E(board).getValue(depositFacetId);
-              const invitation = await E(publicFacet).makeInvitation(nickname);
-              const invitationAmount = await E(invitationIssuer).getAmountOf(
-                invitation,
-              );
-              const {
-                value: [{ handle }],
-              } = invitationAmount;
-              const invitationHandleBoardId = await E(board).getId(handle);
-              const updatedOffer = { ...offer, invitationHandleBoardId };
-              // We need to wait for the invitation to be
-              // received, or we will possibly win the race of
-              // proposing the offer before the invitation is ready.
-              // TODO: We should make this process more robust.
-              await E(depositFacet).receive(invitation);
+        ws.on('message', async msg => {
+          const obj = JSON.parse(msg);
+          try {
+            switch (obj.type) {
+              case 'encouragement/getEncouragement': {
+                send({
+                  type: 'encouragement/getEncouragementResponse',
+                  data: await E(publicFacet).getFreeEncouragement(
+                    obj.data.nickname,
+                  ),
+                });
+                break;
+              }
 
-              send({
-                type: 'encouragement/sendInvitationResponse',
-                data: { offer: updatedOffer },
-              });
-              break;
-            }
+              case 'encouragement/subscribeNotifications': {
+                subscribedWS.add(ws);
+                send({
+                  type: 'encouragement/subscribeNotificationsResponse',
+                  data: !notifierError,
+                });
+                break;
+              }
 
-            default: {
-              console.error(`Unrecognized message type ${obj.type}`);
-              send({
-                type: `${obj.type}Response`,
-                error: `Unrecognized message type ${obj.type}`,
-              });
-              break;
+              case 'encouragement/rendezvousWith': {
+                const { walletAddresses } = obj.data;
+                const entries = walletAddresses.map(addr => [addr, null]);
+                addrWallets = await E(rendezvous).rendezvousWith(
+                  Object.fromEntries(entries),
+                );
+                send({
+                  type: 'encouragement/rendezvousWithResponse',
+                  data: { matchedWallets: Object.keys(addrWallets) },
+                });
+                break;
+              }
+
+              case 'encouragement/addOfferInvitation': {
+                const { offer, nickname, walletAddress } = obj.data;
+
+                // Send the offer to our selected wallet.
+                const wallet = addrWallets[walletAddress];
+                if (!wallet) {
+                  throw Error(`No such wallet address ${walletAddress}`);
+                }
+
+                const inviteP = E(publicFacet).makeInvitation(nickname);
+                const id = await E(wallet).addOfferInvitation(offer, inviteP);
+
+                send({
+                  type: 'encouragement/addOfferInvitationResponse',
+                  data: id,
+                });
+                break;
+              }
+
+              default: {
+                throw Error(`Unrecognized message type ${obj.type}`);
+              }
             }
+          } catch (e) {
+            console.error(e);
+            send({
+              type: `${obj.type}Response`,
+              error: `Unrecognized message type ${obj.type}`,
+            });
           }
         });
       });

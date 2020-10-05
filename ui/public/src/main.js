@@ -6,7 +6,6 @@ import { walletUpdatePurses, flipSelectedBrands } from './wallet.js';
 import { explode } from '../lib/implode';
 
 const { 
-  INVITE_BRAND_BOARD_ID, 
   INSTANCE_HANDLE_BOARD_ID, 
   INSTALLATION_HANDLE_BOARD_ID,
   issuerBoardIds: {
@@ -32,21 +31,43 @@ export default async function main() {
     flipSelectedBrands(selects);
   });
 
-  let zoeInvitationDepositFacetId;
-  
+  let walletAddress = 'none';
+
   /**
    * @param {{ type: string; data: any; walletURL: string }} obj
    */
   const walletRecv = obj => {
     switch (obj.type) {
+      case 'walletRendezvousResponse': {
+        const { walletAddresses } = obj.data;
+        apiSend({
+          type: 'encouragement/rendezvousWith',
+          data: { walletAddresses },
+        })
+        break;
+      }
       case 'walletUpdatePurses': {
         const purses = JSON.parse(obj.data);
         walletUpdatePurses(purses, selects);
         $inputAmount.removeAttribute('disabled');
         break;
       }
-      case 'walletDepositFacetIdResponse': {
-        zoeInvitationDepositFacetId = obj.data;
+      case 'walletOfferNew': {
+        const offer = obj.data;
+        apiSend({
+          type: 'encouragement/addOfferInvitation',
+          data: {
+            offer,
+            nickname: $nickname.value,
+            walletAddress,
+          },
+        });
+        break;
+      }
+      case 'walletOfferResult': {
+        const { outcome } = obj.data;
+        alert(outcome);
+        break;
       }
     }
   };
@@ -59,24 +80,27 @@ export default async function main() {
    */
   const apiRecv = obj => {
     switch (obj.type) {
+      case 'encouragement/dappAddresses': {
+        const dappAddresses = obj.data;
+        walletSend({
+          type: 'walletRendezvous',
+          dappAddresses,
+        });
+        break;
+      }
+      case 'encouragement/rendezvousWithResponse': {
+        const { matchedWallets } = obj.data;
+        if (matchedWallets.length >= 1) {
+          walletAddress = matchedWallets[0];
+        }
+        break;
+      }
       case 'encouragement/getEncouragementResponse': {
         alert(`Encourager says: ${obj.data}`);
         break;
       }
       case 'encouragement/encouragedResponse': {
         $numEncouragements.innerHTML = obj.data.count;
-        break;
-      }
-      case 'encouragement/sendInvitationResponse': {
-        // Once the invitation has been sent to the user, we update the
-        // offer to include the invitationHandleBoardId. Then we make a
-        // request to the user's wallet to send the proposed offer for
-        // acceptance/rejection.
-        const { offer } = obj.data;
-        walletSend({
-          type: 'walletAddOffer',
-          data: offer,
-        });
         break;
       }
     }
@@ -89,7 +113,6 @@ export default async function main() {
   // wallet will just ignore the messages and allow access immediately.
   const walletSend = await connect('wallet', walletRecv, '?suggestedDappPetname=Encouragement').then(walletSend => {
     walletSend({ type: 'walletGetPurses'});
-    walletSend({ type: 'walletGetDepositFacetId', brandBoardId: INVITE_BRAND_BOARD_ID });
     walletSend({
       type: 'walletSuggestInstallation',
       petname: 'Installation',
@@ -139,12 +162,11 @@ export default async function main() {
         const offer = {
           // JSONable ID for this offer.  This is scoped to the origin.
           id: now,
-
-          // TODO: get this from the invitation instead in the wallet. We
-          // don't want to trust the dapp on this.
-          instanceHandleBoardId: INSTANCE_HANDLE_BOARD_ID,
-          installationHandleBoardId: INSTALLATION_HANDLE_BOARD_ID,
-      
+          dappContext: {
+            // This nonempty object means that we won't display the outcome
+            // in the wallet.
+            showOutcome: true,
+          },
           proposalTemplate: {
             give: {
               Tip: {
@@ -157,13 +179,10 @@ export default async function main() {
             exit: { onDemand: null },
           },
         };
-        apiSend({
-          type: 'encouragement/sendInvitation',
-          data: {
-            depositFacetId: zoeInvitationDepositFacetId,
-            offer,
-            nickname: $nickname.value,
-          },
+
+        walletSend({
+          type: 'walletAddOffer',
+          data: offer,
         });
         // alert('Please approve your tip, then close the wallet.')
       }

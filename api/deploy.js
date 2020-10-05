@@ -32,7 +32,7 @@ const API_HOST = process.env.API_HOST || '127.0.0.1';
 const API_PORT = process.env.API_PORT || '8000';
 
 /**
- * @typedef {{ zoe: ZoeService, board: Board, spawner, wallet, uploads, http }} Home
+ * @typedef {{ zoe: ZoeService, board: Board, spawner, wallet, uploads, http, rendezvous }} Home
  * @param {Promise<Home>} homePromise
  * A promise for the references available from REPL home
  * @param {DeployPowers} powers
@@ -78,6 +78,10 @@ export default async function deployApi(
     // have a one-to-one bidirectional mapping. If a value is added a
     // second time, the original id is just returned.
     board,
+
+    // The rendezvous server allows us to negotiate connections between
+    // two ag-solos via the chain address associated with their client.
+    rendezvous,
   } = home;
 
   // To get the backend of our dapp up and running, first we need to
@@ -152,9 +156,6 @@ export default async function deployApi(
   console.log(`-- ${outcome}`);
 
   console.log('Retrieving Board IDs for issuers and brands');
-  const invitationIssuerP = E(zoe).getInvitationIssuer();
-  const invitationBrandP = E(invitationIssuerP).getBrand();
-
   const assuranceIssuerP = E(publicFacet).getAssuranceIssuer();
   const asurranceBrandP = E(assuranceIssuerP).getBrand();
   const tipBrandP = E(tipIssuer).getBrand();
@@ -163,7 +164,6 @@ export default async function deployApi(
   // instanceHandle by adding it to the board. Any users of our
   // contract will use this instanceHandle to get invitations to the
   // contract in order to make an offer.
-  const invitationIssuer = await invitationIssuerP;
   const tipBrand = await tipBrandP;
   const assuranceIssuer = await assuranceIssuerP;
   const assuranceBrand = await asurranceBrandP;
@@ -203,9 +203,8 @@ export default async function deployApi(
     // Spawn the running code
     const handler = E(handlerInstall).spawn({
       publicFacet,
-      board,
       http,
-      invitationIssuer,
+      rendezvous,
     });
     await E(http).registerAPIHandler(handler);
   };
@@ -224,16 +223,12 @@ export default async function deployApi(
       host: API_HOST,
       CONTRACT_NAME,
       publicFacet,
-      board,
-      invitationIssuer,
+      rendezvous,
     });
   };
 
   const installer = API_PORT === '8000' ? installHandler : installPluginServer;
   await installer();
-
-  const invitationBrand = await invitationBrandP;
-  const INVITE_BRAND_BOARD_ID = await E(board).getId(invitationBrand);
 
   const API_URL = process.env.API_URL || `http://127.0.0.1:${API_PORT || 8000}`;
 
@@ -241,7 +236,6 @@ export default async function deployApi(
   const dappConstants = {
     INSTANCE_HANDLE_BOARD_ID,
     INSTALLATION_HANDLE_BOARD_ID,
-    INVITE_BRAND_BOARD_ID,
     // BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
     brandBoardIds: {
       Tip: TIP_BRAND_BOARD_ID,

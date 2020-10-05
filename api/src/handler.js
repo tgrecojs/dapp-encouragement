@@ -2,13 +2,14 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-const spawnHandler = (
-  { publicFacet, http, board, invitationIssuer },
+const spawnHandler = async (
+  { publicFacet, http, rendezvous },
   _invitationMaker,
-) =>
-  harden({
+) => {
+  const dappAddresses = await Promise.all([E(rendezvous).getLocalAddress()]);
+  return harden({
     // The new CapTP public facet.
-    getBootstrap(_otherSide, _meta) {
+    async getBootstrap(otherSide, _meta) {
       return harden({
         getEncouragement(nickname) {
           return E(publicFacet).getFreeEncouragement(nickname);
@@ -16,24 +17,15 @@ const spawnHandler = (
         getNotifier() {
           return E(publicFacet).getNotifier();
         },
-        async sendInvitation(depositFacetId, offer, nickname) {
-          const depositFacet = E(board).getValue(depositFacetId);
-          const invitation = await E(publicFacet).makeInvitation(nickname);
-          const invitationAmount = await E(invitationIssuer).getAmountOf(
-            invitation,
-          );
-          const {
-            value: [{ handle }],
-          } = invitationAmount;
-          const invitationHandleBoardId = await E(board).getId(handle);
-          const updatedOffer = { ...offer, invitationHandleBoardId };
-          // We need to wait for the invitation to be
-          // received, or we will possibly win the race of
-          // proposing the offer before the invitation is ready.
-          // TODO: We should make this process more robust.
-          await E(depositFacet).receive(invitation);
-
-          return updatedOffer;
+        async getDappAddresses() {
+          return dappAddresses;
+        },
+        async rendezvousWith(walletAddresses) {
+          const entries = walletAddresses.map(addr => [addr, otherSide]);
+          return E(rendezvous).rendezvousWith(Object.fromEntries(entries));
+        },
+        async makeInvitatition(nickname) {
+          return E(publicFacet).makeInvitation(nickname);
         },
       });
     },
@@ -43,10 +35,11 @@ const spawnHandler = (
     getCommandHandler: makeLegacyCommandHandler({
       publicFacet,
       http,
-      board,
-      invitationIssuer,
+      rendezvous,
+      dappAddresses,
     }),
   });
+};
 
 export default harden(spawnHandler);
 
@@ -54,18 +47,18 @@ export default harden(spawnHandler);
 const makeLegacyCommandHandler = ({
   publicFacet,
   http,
-  board,
-  invitationIssuer,
+  rendezvous,
+  dappAddresses,
 }) => {
   let notifier;
 
   // Here's how you could implement a notification-based
   // publish/subscribe.
-  const subChannelHandles = new Set();
+  const subChannelWallets = new Map();
 
   const sendToSubscribers = obj => {
     E(http)
-      .send(obj, [...subChannelHandles.keys()])
+      .send(obj, [...subChannelWallets.keys()])
       .catch(e => console.error('cannot send', e));
   };
 
@@ -96,7 +89,7 @@ const makeLegacyCommandHandler = ({
     .getUpdateSince()
     .then(doOneNotification, fail);
 
-  return function getCommandHandler() {
+  return () => {
     const handler = {
       onError(obj, _meta) {
         console.error('Have error', obj);
@@ -104,13 +97,20 @@ const makeLegacyCommandHandler = ({
 
       // The following is to manage the subscribers map.
       onOpen(_obj, { channelHandle }) {
-        subChannelHandles.add(channelHandle);
+        subChannelWallets.set(channelHandle, {});
+        E(http).send(
+          {
+            type: 'encouragement/dappAddresses',
+            data: dappAddresses,
+          },
+          [channelHandle],
+        );
       },
       onClose(_obj, { channelHandle }) {
-        subChannelHandles.delete(channelHandle);
+        subChannelWallets.delete(channelHandle);
       },
 
-      async onMessage(obj, { _channelHandle }) {
+      async onMessage(obj, { channelHandle }) {
         // These are messages we receive from either POST or WebSocket.
         switch (obj.type) {
           case 'encouragement/getEncouragement': {
@@ -129,28 +129,33 @@ const makeLegacyCommandHandler = ({
             });
           }
 
-          case 'encouragement/sendInvitation': {
-            const { depositFacetId, offer, nickname } = obj.data;
-            const depositFacet = E(board).getValue(depositFacetId);
-            const invitation = await E(publicFacet).makeInvitation(nickname);
-            const invitationAmount = await E(invitationIssuer).getAmountOf(
-              invitation,
+          case 'encouragement/rendezvousWith': {
+            const { walletAddresses } = obj.data;
+            const entries = walletAddresses.map(addr => [addr, null]);
+            const addrWallets = await E(rendezvous).rendezvousWith(
+              Object.fromEntries(entries),
             );
-            const {
-              value: [{ handle }],
-            } = invitationAmount;
-            const invitationHandleBoardId = await E(board).getId(handle);
-            const updatedOffer = { ...offer, invitationHandleBoardId };
-            // We need to wait for the invitation to be
-            // received, or we will possibly win the race of
-            // proposing the offer before the invitation is ready.
-            // TODO: We should make this process more robust.
-            await E(depositFacet).receive(invitation);
+            subChannelWallets.set(channelHandle, addrWallets);
+            return {
+              type: 'encouragement/rendezvousWithResponse',
+              data: { matchedWallets: Object.keys(addrWallets) },
+            };
+          }
 
-            return harden({
-              type: 'encouragement/sendInvitationResponse',
-              data: { offer: updatedOffer },
-            });
+          case 'encouragement/addOfferInvitation': {
+            const { offer, nickname, walletAddress } = obj.data;
+
+            const wallet = subChannelWallets.get(channelHandle)[walletAddress];
+            if (!wallet) {
+              throw Error(`No such wallet address ${walletAddress}`);
+            }
+
+            const invitation = E(publicFacet).makeInvitation(nickname);
+            await E(wallet).addOfferInvitation(offer, invitation);
+            return {
+              type: 'encouragement/addOfferInvitationResponse',
+              data: true,
+            };
           }
 
           default:
