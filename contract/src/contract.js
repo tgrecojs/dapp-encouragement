@@ -35,9 +35,14 @@ const start = async zcf => {
   updateNotification();
 
   /** @type {OfferHandler} */
-  const create = seat => {
+  const create = async seat => {
     creatorSeat = seat;
-    return `creator invitation redeemed`;
+    return harden({
+      exit() {
+        creatorSeat.exit();
+        return 'exited';
+      },
+    });
   };
 
   /** @type {(nickname?: string) => OfferHandler} */

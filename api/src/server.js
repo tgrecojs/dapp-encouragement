@@ -231,7 +231,7 @@ export const bootPlugin = ({ getState, setState }) => {
             console.error(e);
             send({
               type: `${obj.type}Response`,
-              error: `Unrecognized message type ${obj.type}`,
+              error: `${(e && e.stack) || e}`,
             });
           }
         });

@@ -136,10 +136,10 @@ const makeLegacyCommandHandler = ({
               Object.fromEntries(entries),
             );
             subChannelWallets.set(channelHandle, addrWallets);
-            return {
+            return harden({
               type: 'encouragement/rendezvousWithResponse',
               data: { matchedWallets: Object.keys(addrWallets) },
-            };
+            });
           }
 
           case 'encouragement/addOfferInvitation': {
@@ -152,10 +152,10 @@ const makeLegacyCommandHandler = ({
 
             const invitation = E(publicFacet).makeInvitation(nickname);
             await E(wallet).addOfferInvitation(offer, invitation);
-            return {
+            return harden({
               type: 'encouragement/addOfferInvitationResponse',
               data: true,
-            };
+            });
           }
 
           default:

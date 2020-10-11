@@ -31,7 +31,7 @@ export default async function main() {
     flipSelectedBrands(selects);
   });
 
-  let walletAddress = 'none';
+  let walletAddress;
 
   /**
    * @param {{ type: string; data: any; walletURL: string }} obj
@@ -65,8 +65,8 @@ export default async function main() {
         break;
       }
       case 'walletOfferResult': {
-        const { outcome } = obj.data;
-        alert(outcome);
+        const { outcome, error } = obj.data;
+        alert(error || outcome);
         break;
       }
     }
@@ -92,6 +92,7 @@ export default async function main() {
         const { matchedWallets } = obj.data;
         if (matchedWallets.length >= 1) {
           walletAddress = matchedWallets[0];
+          $forTip.disabled = false;
         }
         break;
       }

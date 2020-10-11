@@ -20,6 +20,8 @@ const TIP_ISSUER_PETNAME = process.env.TIP_ISSUER_PETNAME || 'moola';
  * @property {(path: string) => Promise<{ moduleFormat: string, source: string }>} bundleSource
  * @property {(path: string) => string} pathResolve
  * @property {(path: string, opts?: any) => Promise<any>} installUnsafePlugin
+ * @property {string} port
+ * @property {string} host
  *
  * @typedef {Object} Board
  * @property {(id: string) => any} getValue
@@ -29,7 +31,6 @@ const TIP_ISSUER_PETNAME = process.env.TIP_ISSUER_PETNAME || 'moola';
  */
 
 const API_HOST = process.env.API_HOST || '127.0.0.1';
-const API_PORT = process.env.API_PORT || '8000';
 
 /**
  * @typedef {{ zoe: ZoeService, board: Board, spawner, wallet, uploads, http, rendezvous }} Home
@@ -39,10 +40,12 @@ const API_PORT = process.env.API_PORT || '8000';
  */
 export default async function deployApi(
   homePromise,
-  { bundleSource, pathResolve, installUnsafePlugin },
+  { bundleSource, pathResolve, installUnsafePlugin, port },
 ) {
   // Let's wait for the promise to resolve.
   const home = await homePromise;
+
+  const API_PORT = process.env.API_PORT || port;
 
   // Unpack the references.
   const {
@@ -130,7 +133,7 @@ export default async function deployApi(
 
   console.log('Installing contract');
   const issuerKeywordRecord = harden({ Tip: tipIssuer });
-  const { creatorInvitation: adminInvitation, instance, publicFacet } = await E(
+  const { creatorInvitation, instance, publicFacet } = await E(
     zoe,
   ).startInstance(contractInstallation, issuerKeywordRecord);
 
@@ -140,20 +143,10 @@ export default async function deployApi(
   // specifying any proposal, and we aren't escrowing any assets with
   // Zoe in this offer. We are doing this so that Zoe will eventually
   // give us a payout of all of the tips. We can trigger this payout
-  // by calling the `complete` function on the `completeObj`.
+  // by calling the `exit` function on the `adminSeat` `offerResult`.
   console.log('Retrieving admin');
-  const adminSeat = E(zoe).offer(adminInvitation);
-  const outcomeP = E(adminSeat).getOfferResult();
-
-  // When the promise for a payout resolves, we want to deposit the
-  // payments in our purses. We will put the adminPayoutP and
-  // completeObj in our scratch location so that we can share the
-  // live objects with the shutdown.js script.
-  E(scratch).set('adminPayoutP', E(adminSeat).getPayouts());
+  const adminSeat = E(zoe).offer(creatorInvitation);
   E(scratch).set('adminSeat', adminSeat);
-
-  const outcome = await outcomeP;
-  console.log(`-- ${outcome}`);
 
   console.log('Retrieving Board IDs for issuers and brands');
   const assuranceIssuerP = E(publicFacet).getAssuranceIssuer();
@@ -227,22 +220,20 @@ export default async function deployApi(
     });
   };
 
-  const installer = API_PORT === '8000' ? installHandler : installPluginServer;
+  const installer = API_PORT === port ? installHandler : installPluginServer;
   await installer();
 
-  const API_URL = process.env.API_URL || `http://127.0.0.1:${API_PORT || 8000}`;
+  const API_URL = process.env.API_URL || `http://127.0.0.1:${API_PORT}`;
 
   // Re-save the constants somewhere where the UI and api can find it.
   const dappConstants = {
     INSTANCE_HANDLE_BOARD_ID,
     INSTALLATION_HANDLE_BOARD_ID,
-    // BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
     brandBoardIds: {
       Tip: TIP_BRAND_BOARD_ID,
       Assurance: ASSURANCE_BRAND_BOARD_ID,
     },
     issuerBoardIds: { Assurance: ASSURANCE_ISSUER_BOARD_ID },
-    BRIDGE_URL: 'http://127.0.0.1:8000',
     API_URL,
   };
   const defaultsFile = pathResolve(`../ui/public/conf/defaults.js`);
