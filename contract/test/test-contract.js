@@ -70,11 +70,8 @@ test('contract with valid offers', async t => {
   // to remove our tips at the end
   const creatorSeat = await E(zoe).offer(creatorInvitation);
 
-  t.is(
-    await E(creatorSeat).getOfferResult(),
-    `creator invitation redeemed`,
-    `creator outcome is correct`,
-  );
+  const ores = await E(creatorSeat).getOfferResult();
+  t.deepEqual(ores, { exit: ores.exit }, `creator outcome is correct`);
 
   // Let's test some of the publicFacet methods. The publicFacet is
   // accessible to anyone who has access to Zoe and the
